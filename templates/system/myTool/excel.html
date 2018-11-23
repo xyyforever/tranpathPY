@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Excel导入/导出（myTool）</title>
+{% include 'common/head.html' %}
+</head>
+<body>
+
+        <!--
+          	作者：2243788@qq.com
+          	时间：2017-10-10
+          	描述：添加修改模态窗口
+          -->
+        <div class="modal fade" id="modalAdd">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                  &times;
+                </button>
+                <h4 class="modal-title">
+                  	导入Excel文件到数据库
+                </h4>
+              </div>
+              <form id="formAdd" class="form-horizontal row-border" onsubmit="return false" action="">
+                  <div class="modal-body">
+                    <div style="padding-right: 5px;">
+                        <div class='form-group'>
+                            <label class='col-md-3 control-label'>
+                                表名：
+                            </label>
+                            <div class='col-md-9'>
+                                <span style="line-height: 30px">temp</span><input type='text' id='tableName' name='tableName' onkeyup="fileinputShowOrHide()" style="display: inline-block" class='form-control input-width-medium'>
+                            </div>
+                            <label class='col-md-3 control-label'>
+                                选择文件：
+                            </label>
+                            <div class='col-md-9'>
+                                <div id="divUpload" style="display: none">
+                                    <input id="file1" type="file" name="file">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <input type="hidden" id="id" name="id" value="">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">
+                        关闭
+                    </button>
+    {#                <button type="submit" id="btnSubmit" class="btn btn-primary">#}
+    {#                  	提交#}
+    {#                </button>#}
+                  </div>
+                </div>
+            </form>
+          </div>
+        </div>
+		<!--
+        	作者：2243788@qq.com
+        	时间：2017-10-10
+        	描述：添加修改模态窗口--结束
+        -->
+
+       <!--
+          	作者：2243788@qq.com
+          	时间：2017-10-10
+          	描述：添加修改模态窗口
+          -->
+        <div class="modal fade" id="modalSetFieldName">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                  &times;
+                </button>
+                <h4 class="modal-title">
+                    设置字段名（<span id="filenameShow"></span>）
+                </h4>
+              </div>
+              <form id="formSetFieldName" class="form-horizontal row-border" onsubmit="return false" action="">
+              <div class="modal-body">
+              	<div id="fieldListShow" style="padding-right: 5px;">
+
+                </div>
+              </div>
+              <div class="modal-footer">
+                <input type="hidden" id="excelImportFileMainId" name="excelImportFileMainId" value="">
+              	<input type="hidden" id="fieldCount" name="fieldCount" value="">
+                <button type="button" class="btn btn-default" data-dismiss="modal">
+                  	关闭
+                </button>
+                <button type="submit" id="btnSubmitFieldName" class="btn btn-primary">
+                  	提交
+                </button>
+              </div>
+            </div>
+            </form>
+          </div>
+        </div>
+		<!--
+        	作者：2243788@qq.com
+        	时间：2017-10-10
+        	描述：添加修改模态窗口--结束
+        -->
+
+
+    <div class="container" style="margin-top: 10px">
+        <ul class="nav nav-tabs" id="nav-tabs">
+            <li class="active">
+                <a href="#tab_1_1" data-toggle="tab">
+                    Excel文件上传到数据库
+                </a>
+            </li>
+            <li>
+                <a href="#tab_1_2" data-toggle="tab">
+                    执行SELECT返回数据
+                </a>
+            </li>
+{#            <li>#}
+{#                <a href="#tab_1_3" data-toggle="tab">#}
+{#                    待遇信息#}
+{#                </a>#}
+{#            </li>#}
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active" id="tab_1_1">
+                <div id="toolbarForSearch">
+                    <div class="btn-group" style="margin-top: -3px;padding-right: 10px">
+                        <button id="btnAdd" type="button" class="btn btn-default">
+                            <span class="icon-plus" aria-hidden="true"></span>添加
+                        </button>
+                        <button id="btnDel" type="button" class="btn btn-danger">
+                            <span class="icon-remove" aria-hidden="true"></span>删除
+                        </button>
+                    </div>
+                    <div class="pull-right" style='margin-left: 10px;'>
+                        <button class="btn btn-default" id="btnSearch" style="margin-bottom:3px">查询</button>
+                    </div>
+                    <div class="pull-right">
+                        <input type="text" id="keywords" name="keywords" class="form-control" onkeydown="" placeholder="查询关键字"/>
+                    </div>
+                </div>
+                <table class="table table-hover"
+                        id="cusTableExcelFileMain"
+                        data-pagination="true"
+                        data-show-refresh="true"
+                        data-show-toggle="true"
+                        data-showColumns="true">
+                    <thead>
+                      <tr>
+                          <th data-field="id">
+
+                          </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+
+            </div>
+            <div class="tab-pane" id="tab_1_2">
+                <div style="margin-top: 10px">
+                    <textarea id="sqlStr" name="sqlStr" rows="10" style="width: 800px;"></textarea>
+                </div>
+                <div style="margin-top: 10px">
+                    <button type="button" id="btnExecSql" name="btnExecSql" class="btn btn-default">提交</button>
+                </div>
+            </div>
+            <div class="tab-pane" id="tab_1_3">
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
+<script>
+
+$(function () {
+
+    initTable()
+
+    $("#btnAdd").bind("click",add);
+    $("#btnSearch").bind("click",initTable);
+    $("#btnDel").bind("click",remove);
+    $("#btnExecSql").bind("click",execSql);
+
+    $("#btnSubmitFieldName").bind("click",submitFieldName);
+
+})
+
+
+function execSql() {
+    sqlStr = $("#sqlStr").val();
+    alert(sqlStr)
+    $.ajax({
+        type: "POST",
+        url: "../../myTool/ajaxExecSql/",
+        data: {sqlStr:sqlStr},
+        async: false,//true：异步；false：同步
+        success: function(msg){
+            //console.log(msg)
+            location.href="../../static/download/"+msg;
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            alert(jqXHR.responseText);
+            //alert("AJAX返回出错，请与技术人员联系！");
+        }
+    });
+}
+
+
+function fileinputShowOrHide() {
+    tableName = $("#tableName").val();
+    if (tableName == ""){
+        $("#divUpload").hide()
+    }else{
+        $("#divUpload").show()
+    }
+}
+
+function add(){
+    iniFileUpload()
+    $("#tableName").val("")
+	$("#modalAdd").modal('show');
+}
+
+function remove() {
+    //alert("remove")
+    var nodeArray=$('#cusTableExcelFileMain').bootstrapTable("getAllSelections")
+	var idsForDelete=""
+	for (var i=0;i<nodeArray.length;i++){
+		if (idsForDelete==""){
+			idsForDelete=nodeArray[i].id;
+		}else{
+			idsForDelete=idsForDelete+","+nodeArray[i].id;
+		}
+	}
+    if (confirm("确定删除所选记录吗？")){
+        $.ajax({
+            type: "POST",
+            url: "../../myTool/excel_import_file_main_del/",
+            data: {idsForDelete:idsForDelete},
+            async: false,//true：异步；false：同步
+            success: function(msg){
+                //console.log(msg)
+                if (msg=="T"){
+
+                    $('#cusTableExcelFileMain').bootstrapTable(('refresh'));
+                }else{
+                    alert(msg);
+                }
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                alert(jqXHR.responseText);
+                //alert("AJAX返回出错，请与技术人员联系！");
+            }
+        });
+    }
+}
+
+var parameter;
+
+function iniFileUpload(){
+    $("#file1").fileinput('destroy');
+    initFileInput("file1", "../../myTool/ajaxUpload/");
+}
+
+function initFileInput(ctrlName, uploadUrl) {
+	//alert(ctrlName)
+    var control = $('#' + ctrlName);
+    control.fileinput({
+        language: 'zh', //设置语言
+        uploadUrl: uploadUrl, //上传的地址
+        allowedFileExtensions : ['xls','xlsx'],//接收的文件后缀
+        maxFileCount: 1,
+        showUpload: true, //是否显示上传按钮
+        showCaption: true,//是否显示标题
+        showRemove : true, //显示移除按钮
+        dropZoneEnabled: true,//是否显示拖拽区域
+        showPreview : true,//是否显示预览
+        browseClass: "btn btn-primary", //按钮样式
+        previewFileIcon: "<i class='icon-desktop'></i>",
+        enctype: "multipart/form-data",
+        showUpload:true,
+        uploadExtraData : function() {  //传递参数
+              return parameter;
+        }
+    });
+}
+
+$('#file1').on('filepreupload', function(event, data, previewId, index) {
+    var form = data.form,
+     	files = data.files,
+     	extra = data.extra,
+        response = data.response,
+        reader = data.reader;
+    //console.log('File pre upload triggered');
+    return false;
+    console.log("filepreupload");
+});
+
+
+
+$('#file1').on('filepreajax', function(event, previewId, index) {
+    parameter = {"tableName": tableName};
+    console.log(tableName);
+
+});
+
+//	//异步上传返回结果处理
+	$('#file1').on('fileerror', function(event, data, msg) {
+//	    console.log(data.id);
+//	    console.log(data.index);
+//	    console.log(data.file);
+//	    console.log(data.reader);
+//	    console.log(data.files);
+//	    // get message
+//	    console.log(msg);
+		console.log("fileerror")
+	});
+//
+//	//异步上传返回结果处理
+	$("#file1").on("fileuploaded", function (event, data, previewId, index) {
+		console.log("fileuploaded")
+//      console.log(data.id);
+//      console.log(data.index);
+//      console.log(data.file);
+//      console.log(data.reader);
+//      console.log(data.files);
+    	var obj = data.response;
+
+		console.log(obj.result)
+
+        $('#cusTableExcelFileMain').bootstrapTable(('refresh'));
+        $("#modalAdd").modal('hide');
+    	//console.log(JSON.stringify(data.success));
+		//console.log("filePath:"+obj.filePath);
+		//console.log("importOrderFilenamesId:"+obj.importOrderFilenamesId);
+		//console.log("checker:"+obj.checker);
+
+		//var societyMainId=obj.societyMainId;
+		//var savedFilename=obj.savedFilename;
+
+		//console.log(societyMainId);
+		//console.log(savedFilename)
+
+ });
+
+
+function setTableName(id) {
+    //alert(id)
+    bootbox.prompt("请输入表名：", function(result){
+        //alert(result)
+        if (result != null){
+            if (result == ""){
+                return;
+            }
+            $.ajax({
+                url: "../../myTool/ajaxSetTableName/",
+                type: "post",
+                data: {id:id,tableName:result},
+                success: function (text) {
+                    //alert("提交成功，返回结果:" + text);
+                    if (text != "0"){
+                        $('#cusTableExcelFileMain').bootstrapTable(('refresh'));
+                    }
+                },
+                error:function(jqXHR, textStatus, errorThrown){
+                    alert(jqXHR.responseText);
+                    alert("AJAX返回出错，请与技术人员联系！");
+                }
+            });
+        }
+    })
+}
+
+function setFieldName(filename,id,defaultFieldsName) {
+    //alert(id)
+    //myTool/ajaxGetTableFields/
+    $.ajax({
+        url: "../../myTool/ajaxGetTableFields/",
+        type: "post",
+        data: {id:id},
+        success: function (text) {
+            //alert("提交成功，返回结果:" + text);
+            $("#filenameShow").html(filename);
+            $("#modalSetFieldName").modal("show");
+
+            if (defaultFieldsName!=""){
+                tempArrayDefault=defaultFieldsName.split("|");
+            }
+
+            obj = text;//JSON.parse(text);
+            colsList = obj.colsList;
+            colTypeNameList = obj.colTypeNameList;
+
+            var html = "";
+            var fieldCount = 0;
+            if (colsList !=""){
+                tempArray = colsList.split("|");
+                tempArrayColType = colTypeNameList.split("|");
+                for (var i=0;i<tempArray.length;i++){
+                    defaultValue = "";
+                    if (defaultFieldsName!=""){
+                        defaultValue = tempArrayDefault[i];
+                    }
+
+                    html += "<div class='form-group' style='padding-top:5px;padding-bottom:5px'>";
+                    html += "   <label class='col-md-4 control-label'>";
+                    html += "   "+tempArray[i]+"：";
+                    html += "   </label>";
+                    html += "   <div class='col-md-8'>";
+                    html += "       <input type='text' id='fieldNameNew"+i+"' name='fieldNameNew"+i+"' class='form-control input-width-medium' value='"+defaultValue+"' placeholder='为空不导入'>";
+                    html += "       <input type='hidden' id='fieldNameOriginal"+i+"' name='fieldNameOriginal"+i+"' value='"+tempArray[i]+"'>";
+                    html += "       <input type='hidden' id='colTypeName"+i+"' name='colTypeName"+i+"' value='"+tempArrayColType[i]+"'>";
+                    html += "   </div>";
+                    html += "</div>";
+                }
+                fieldCount=tempArray.length;
+            }
+            $("#excelImportFileMainId").val(id);
+            $("#fieldCount").val(fieldCount);
+            $("#fieldListShow").html(html);
+        },
+        error:function(jqXHR, textStatus, errorThrown){
+            alert(jqXHR.responseText);
+            alert("AJAX返回出错，请与技术人员联系！");
+        }
+    });
+}
+
+function submitFieldName() {
+    //alert(form.name.value)
+    var jsonObj=form2JsonObj("formSetFieldName");
+    //$.cookie('username', jsonObj.username);
+    var jsonStr=form2JsonStr("formSetFieldName");
+    //var jsonStr=encodeURIComponent(jsonStr);//中文编码转换
+    //alert(jsonStr);
+
+    console.log(jsonStr)
+
+    //return;
+
+    $.ajax({
+        url: "../../myTool/ajaxSaveTableFields/",
+        type: "post",
+        data: jsonObj,
+        success: function (text) {
+            //alert("提交成功，返回结果:" + text);
+            if (text=="T" || text=="F"){
+                $("#modalSetFieldName").modal("hide");
+                $('#cusTableExcelFileMain').bootstrapTable(('refresh'));
+            }else{
+                alert(text)
+            }
+        },
+        error:function(jqXHR, textStatus, errorThrown){
+            alert(jqXHR.responseText);
+            alert("AJAX返回出错，请与技术人员联系！");
+        }
+    });
+
+}
+
+function importExcel(id) {
+    //alert(id)
+    window.open("../../myTool/excelPreviewImport/?id="+id)
+}
+
+/*
+ *
+ */
+function initTable(){
+	var tableId="cusTableExcelFileMain"
+	//alert("ABC")
+	//先销毁表格
+	$('#'+tableId).bootstrapTable('destroy');
+	//初始化表格,动态从服务器加载数据
+	$("#"+tableId).bootstrapTable({
+	    method: "get",  //使用get请求到服务器获取数据
+	    toolbar:"#toolbarForSearch",
+	    url: "../../myTool/griddata_excel_import_file_main_list", //获取数据的Servlet地址
+	    detailView: false,//父子表
+	    striped: true,  //表格显示条纹
+	    singleSelect:false,//设置True 将禁止多选
+	    clickToSelect:true,
+	    pagination: true, //启动分页
+	    pageSize: 10,  //每页显示的记录数
+	    pageNumber:1, //当前第几页
+	    pageList: [10, 15, 20, 30,50],  //记录数可选列表
+	    sortable:true,	//是否启用排序
+	    sortName :"id",
+	    sortOrder:"desc",//排序方式
+	    search: false,  //是否启用查询
+	    searchOnEnterKey:true,//设置为 true时，按回车触发搜索方法，否则自动触发搜索方法
+	    searchAlign:"right",
+	    showColumns: true,  //显示下拉框勾选要显示的列
+	    showRefresh: true,  //显示刷新按钮
+	    sidePagination: "server", //表示服务端请求
+	    columns:[
+		    {
+		    	field : 'checked',
+         		checkbox : true,
+         		formatter : function(value,row,index){
+
+         		}
+		    },
+			{
+				title: '原始文件名',
+				field: 'filenameOriginal',
+				align: 'center',
+				valign: 'middle'
+			},
+			{
+				title: '保存文件名',
+				field: 'filenameSaved',
+				sortable: true,
+				align: 'center',
+				valign: 'middle'
+			},
+			{
+				title: '表名',
+				field: 'tableName',
+				sortable: true,
+				halign: 'center',
+				align: 'center',
+				valign: 'middle',
+				formatter : function(value,row,index){
+				    //console.log(row.importTime)
+                    //console.log(row.id)
+					if (row.importTime == "None"){
+						(value!="")? value=value:value="设置表名"
+						return "<a href='javascript:void(0)' onclick=javascript:setTableName("+row.id+")>"+value+"</a>"
+					}else{
+					    return value
+					}
+                }
+			},
+			{
+				title: '添加时间',
+				field: 'addTime',
+				sortable: true,
+				align: 'center',
+				valign: 'middle'
+			},
+			{
+				title: '设置字段名时间',
+				field: 'setFieldNameTime',
+				sortable: true,
+				align: 'center',
+				valign: 'middle',
+                formatter : function(value,row,index){
+				    if (row.importTime == "None"){
+				        tempStr = (row.setFieldNameTime == "None")?"设置字段名":row.setFieldNameTime;
+				        return "<a href='javascript:void(0)' onclick=javascript:setFieldName('"+row.filenameOriginal+"','"+row.id+"','"+row.defaultFieldsName+"')>"+ tempStr +"</a>"
+                    }else{
+				        return value
+                    }
+                }
+			},
+			{
+				title: '导入时间',
+				field: 'importTime',
+				sortable: true,
+				align: 'center',
+				valign: 'middle',
+                formatter : function(value,row,index){
+				    if (row.setFieldNameTime == "None"){
+				        return "需设置字段名"
+                    }else{
+				        if (row.importTime == "None"){
+                            return "<a href='javascript:void(0)' onclick=javascript:importExcel("+row.id+")>预览并导入</a>"
+                        }else{
+                            return value
+                        }
+                    }
+                }
+			}
+	    ],
+	    //设置为undefined可以获取pageNumber，pageSize，searchText，sortName，sortOrder
+	    //设置为limit可以获取limit, offset, search, sort, order
+	    queryParamsType : "undefined",
+	    queryParams: function queryParams(params) {   //设置查询参数
+            var keywords=$("#keywords").val();
+            if (keywords!=""){
+                //keywords = encodeURIComponent(keywords);//中文编码转换
+            }
+
+	      	var param = {
+		  		pageIndex: params.pageNumber,
+		  		pageSize: params.pageSize,
+		  		keywords:keywords,
+		  		sortName:params.sortName,
+			  	sortOrder:params.sortOrder
+	      	};
+	      	return param;
+	    },
+	    onLoadSuccess: function(data){  //加载成功时执行
+	      	//layer.msg("加载成功");
+	      	//alert("加载成功")
+	      	//alert(data.rows[0].expressSendNum)
+	    },
+	    onLoadError: function(status){  //加载失败时执行
+	      	//layer.msg("加载数据失败", {time : 1500, icon : 2});
+	      	//alert("加载数据失败")
+	    },
+	    onPageChange:function(number,size){
+	    	//alert(pageNumber)
+	    },
+	    onCheck:function(row){
+            //alert(row.id);
+	    },
+	    onUncheck:function(row){
+            //alert(row.id);
+	    },
+        onCheckAll:function(rows){
+            //alert(rows.length);
+	    },
+	    onUncheckAll:function(rows){
+            //alert(rows.length);
+	    },
+	   	onColumnSwitch:function(field, checked){
+	    	//alert(rows.length);
+//	    	console.log("--------------------------")
+//	    	console.log(tableId)
+//	    	console.log(field)
+//	    	console.log(checked)
+	    },
+	    //注册加载子表的事件。注意下这里的三个参数！
+        onExpandRow: function (index, row, $detail) {
+            //InitSubTable(index, row, $detail);
+        }
+	});
+}
+
+</script>

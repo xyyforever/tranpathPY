@@ -1,0 +1,2159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <title>{{ sysTitle }}</title>
+    {% include 'common/head.html' %}
+    <script>
+        $(document).ready(function () {
+            App.init();
+            Plugins.init();
+            FormComponents.init()
+        });
+    </script>
+    <script>
+        $(function () {
+
+            //判断是否有此页面数据的查看权限
+            if ("{{ allowV }}" != "T") {
+                myAlertBack("您<span style='color:red'>没有权限</span>访问此页面！（{{ purCode }}）", "", "");
+            }
+
+
+            $("#formUser").validate({
+                debug: true, //调试模式，即使验证成功也不会跳转到目标页面
+                errorElement: 'label',
+                errorPlacement: function (error, element) {
+                    error.appendTo(element.parent());
+                },
+                rules: {     //配置验证规则，key就是被验证的dom对象，value就是调用验证的方法(也是json格式)
+                    name: {
+                        required: true  //必填。如果验证方法不需要参数，则配置为true
+                    },
+                    username: {
+                        required: true  //必填。如果验证方法不需要参数，则配置为true
+                    },
+                    password: {
+                        required: true  //必填。如果验证方法不需要参数，则配置为true
+                    },
+                    status: {
+                        required: true  //必填。如果验证方法不需要参数，则配置为true
+                    }
+                },
+                messages: {
+                    name: {
+                        required: "请输入姓名！"
+                    },
+                    username: {
+                        required: "请输入用户名！"
+                    },
+                    password: {
+                        required: "请输入密码！"
+                    },
+                    status: {
+                        required: "请设置是否有效！"
+                    }
+                },
+                submitHandler: function (form) {//提交表单
+                    var jsonObj = form2JsonObj("formUser");
+                    var menuPur = getMenusCheck();//菜单权限
+                    jsonObj["menuIdList"] = menuPur;
+                    //var jsonStr=form2JsonStr("formUser");
+                    //var jsonStr=encodeURIComponent(jsonStr);//中文编码转换
+                    //alert(jsonStr);
+                    //$("#nav-tabs li:eq(0) a").tab("show")
+                    //return;
+                    progressStart(".modal-content", 20, -60)
+                    $.ajax({
+                        url: "/user/ajaxSaveUser/",
+                        type: "post",
+                        data: jsonObj,
+                        success: function (returnObj) {
+                            progressEnd();
+                            //alert("提交成功，返回结果:" + returnObj.result);
+                            if (returnObj.result == "T") {
+                                if (jsonObj.id == "" || jsonObj.id == "0") {
+                                    $.cookie('menupur', "");//保存成功后清除cookie（新建时）
+                                }
+                                refreshTable("cusTableUser");
+                                $("#modalUser").modal('hide');
+                            } else {
+                                myAlert(returnObj.scription, "", "")
+                            }
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            progressEnd();
+                            alert(jqXHR.responseText);
+                            alert("AJAX返回出错，请与技术人员联系！");
+                        }
+                    });
+                }
+            });
+
+
+        });
+    </script>
+</head>
+<body>
+{% include 'common/top.html' %}
+<div id="container">
+    {% include 'common/left.html' %}
+    <div id="content">
+
+
+        <!--
+             作者：2243788@qq.com
+             时间：2018-07-03 18:46:15
+             描述：添加修改菜单模态窗口
+         -->
+        <div class="modal fade" id="modalUser">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                            ×
+                        </button>
+                        <h4 class="modal-title">
+                            <span id="acShow"></span>系统用户信息
+                        </h4>
+                    </div>
+                    <form id="formUser" class="form-horizontal row-border" onsubmit="return false" action="">
+                        <div class="modal-body">
+                            <div class="tabbable tabbable-custom">
+                                <ul class="nav nav-tabs" id="nav-tabs">
+                                    <li class="active">
+                                        <a href="#tab_1_1" data-toggle="tab">
+                                            基本信息
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="#tab_1_2" data-toggle="tab">
+                                            设置角色
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="#tab_1_3" data-toggle="tab">
+                                            访问菜单
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="#tab_1_4" data-toggle="tab">
+                                            相关权限
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="#tab_1_5" data-toggle="tab">
+                                            单值参数权限
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="#tab_1_6" data-toggle="tab">
+                                            选择项权限
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="#tab_1_7" data-toggle="tab">
+                                            系统使用者关联
+                                        </a>
+                                    </li>
+                                </ul>
+                                <div class="tab-content" id="tab-content">
+                                    <div class="tab-pane active" id="tab_1_1">
+                                        <div style="padding-right: 5px;">
+                                            <!--字段开始-->
+                                            <div class='form-group'>
+                                                <label class='col-md-3 control-label'>
+                                                    <font color='red'>*</font>姓名 ：
+                                                </label>
+                                                <div class='col-md-9'>
+                                                    <input type='text' id='name' name='name'
+                                                           class='form-control input-width-large'>
+                                                </div>
+                                            </div>
+                                            <div class='form-group'>
+                                                <label class='col-md-3 control-label'>
+                                                    <font color='red'>*</font>用户名 ：
+                                                </label>
+                                                <div class='col-md-9'>
+                                                    <input type='text' id='username' name='username'
+                                                           class='form-control input-width-large'>
+                                                </div>
+                                            </div>
+                                            <div class='form-group'>
+                                                <label class='col-md-3 control-label'>
+                                                    <font color='red'>*</font>密码 ：
+                                                </label>
+                                                <div class='col-md-9'>
+                                                    <input type='password' id='password' name='password'
+                                                           class='form-control input-width-large'>
+                                                </div>
+                                            </div>
+                                            <div class='form-group'>
+                                                <label class='col-md-3 control-label'>
+                                                    <font color='red'>*</font>是否有效 ：
+                                                </label>
+                                                <div class='col-md-9'>
+                                                    <label class='radio-inline'>
+                                                        <input type='radio' class='' id='status0' name='status'
+                                                               value='T' checked>有效
+                                                    </label><label class='radio-inline'>
+                                                    <input type='radio' class='' id='status1' name='status' value='F'>无效
+                                                </label>
+                                                </div>
+                                            </div>
+                                            <div class='form-group'>
+                                                <label class='col-md-3 control-label'>
+                                                    说明 ：
+                                                </label>
+                                                <div class='col-md-9'>
+                                                    <textarea id='memo' name='memo' rows=5
+                                                              class='form-control input-width-large'></textarea>
+                                                </div>
+                                            </div>
+                                            <!--字段结束-->
+
+                                        </div>
+                                    </div>
+
+                                    <div class="tab-pane" id="tab_1_2">
+                                        <div id="toolbarSearchRole">
+                                            <div class="pull-right" style='margin-left: 10px;'>
+                                                <button class="btn btn-default" id="btnSearchRole" type="button"
+                                                        style="margin-bottom:3px">查询
+                                                </button>
+                                            </div>
+                                            <div class="pull-right">
+                                                <input type="text" id="keywordsRole" name="keywordsRole"
+                                                       class="form-control" onkeydown="" placeholder="查询关键字"/>
+                                            </div>
+                                        </div>
+                                        <table class="table table-hover"
+                                               id="cusTableRole"
+                                               data-pagination="true"
+                                               data-show-refresh="true"
+                                               data-show-toggle="true"
+                                               data-showColumns="true">
+                                            <thead>
+                                            <tr>
+                                                <th data-field="id">
+
+                                                </th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="tab-pane" id="tab_1_3">
+                                        <div id="menuTree" style="">
+                                            <div id="menuEditTree"></div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane" id="tab_1_4">
+                                        <div id="purviewForSet" style="margin-top: -10px;">
+                                            <div id="toolbarPurview">
+                                                <div class="pull-right" style='margin-left: 10px;'>
+                                                    <button class="btn btn-default" id="btnSearchPurview" type="button"
+                                                            style="margin-bottom:3px">查询
+                                                    </button>
+                                                </div>
+
+                                                <div class="pull-right">
+                                                    <input type="text" id="keywordsPurview" name="keywordsPurview"
+                                                           class="form-control" placeholder="查询关键字"/>
+                                                </div>
+                                            </div>
+                                            <table class="table table-hover"
+                                                   id="cusTablePurview"
+                                                   data-pagination="true"
+                                                   data-show-refresh="true"
+                                                   data-show-toggle="true"
+                                                   data-showColumns="true">
+                                                <thead>
+                                                <tr>
+                                                    <th data-field="id">
+
+                                                    </th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane" id="tab_1_5">
+                                        <div id="toolbarSearchPara">
+                                            <div class="pull-right" style='margin-left: 10px;'>
+                                                <button class="btn btn-default" id="btnSearchPara" type="button"
+                                                        style="margin-bottom:3px">查询
+                                                </button>
+                                            </div>
+                                            <div class="pull-right">
+                                                <input type="text" id="keywordsPara" name="keywordsPara"
+                                                       class="form-control" onkeydown="" placeholder="查询关键字"/>
+                                            </div>
+                                        </div>
+                                        <table class="table table-hover"
+                                               id="cusTableSyspara"
+                                               data-pagination="true"
+                                               data-show-refresh="true"
+                                               data-show-toggle="true"
+                                               data-showColumns="true">
+                                            <thead>
+                                            <tr>
+                                                <th data-field="id">
+
+                                                </th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="tab-pane" id="tab_1_6">
+                                        <div id="toolbarSearchDicMainList">
+                                            <div class="pull-right" style='margin-left: 10px;'>
+                                                <button class="btn btn-default" id="btnSearchDicMainList" type="button"
+                                                        style="margin-bottom:3px">查询
+                                                </button>
+                                            </div>
+                                            <div class="pull-right">
+                                                <input type="text" id="keywordsDicMain" name="keywordsDicMain"
+                                                       class="form-control" onkeydown="" placeholder="查询关键字"/>
+                                            </div>
+                                        </div>
+                                        <table class="table table-hover"
+                                               id="cusTableDicMainList"
+                                               data-pagination="true"
+                                               data-show-refresh="true"
+                                               data-show-toggle="true"
+                                               data-showColumns="true">
+                                            <thead>
+                                            <tr>
+                                                <th data-field="id">
+
+                                                </th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="tab-pane" id="tab_1_7">
+                                        <div style="padding-right: 5px;">
+                                            <!--字段开始-->
+                                            <div class='form-group'
+                                                 {% ifnotequal sellerId 0 %}style="display:none"{% endifnotequal %}>
+                                                <label class='col-md-3 control-label'>
+                                                    关联商家 ：
+                                                </label>
+                                                <div class='col-md-9'>
+                                                    <select id="sellerId" name="sellerId" style="width: 200px">
+                                                        <option value=""></option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class='form-group'
+                                                 {% ifequal sellerId "0" %}style="display:none"{% endifequal %}>
+                                                <label class='col-md-3 control-label'>
+                                                    关联员工 ：
+                                                </label>
+                                                <div class='col-md-9'>
+                                                    <select id="employeeId" name="employeeId" style="width: 200px">
+                                                        <option value=""></option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <!--字段结束-->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <div id="tip">
+
+                            </div>
+                            <input type="hidden" id="id" name="id" value="">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">
+                                关闭
+                            </button>
+                            <button type="submit" id="submitForm" class="btn btn-primary">
+                                提交
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!--
+            作者：2243788@qq.com
+            时间：2018-07-03 18:46:15
+            描述：添加修改菜单模态窗口--结束
+        -->
+
+        <div class="container">
+            <div class="crumbs">
+                <ul id="breadcrumbs" class="breadcrumb">
+                    <li>
+                        <i class="icon-home">
+                        </i>
+                        {{ pageInfo.menuMainName }}
+                    </li>
+                    <li class="current">
+                        {{ pageInfo.menuSubName }}
+                    </li>
+                </ul>
+                <!--
+                <ul class="crumb-buttons">
+                  <li>
+                    <a href="charts.html" title="">
+                      <i class="icon-signal">
+                      </i>
+                      <span>
+                        统计
+                      </span>
+                    </a>
+                  </li>
+                  <li class="dropdown">
+                    <a href="#" title="" data-toggle="dropdown">
+                      <i class="icon-tasks">
+                      </i>
+                      <span>
+                        用户
+                        <strong>
+                          (+3)
+                        </strong>
+                      </span>
+                      <i class="icon-angle-down left-padding">
+                      </i>
+                    </a>
+                    <ul class="dropdown-menu pull-right">
+                      <li>
+                        <a href="form_components.html" title="">
+                          <i class="icon-plus">
+                          </i>
+                          添加新用户
+                        </a>
+                      </li>
+                      <li>
+                        <a href="http://envato.stammtec.de/themeforest/melon/tables_dynamic.html"
+                        title="">
+                          <i class="icon-reorder">
+                          </i>
+                          查看
+                        </a>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+                -->
+            </div>
+            <div class="row" style="padding-top: 10px;">
+                <div class="col-md-12">
+                    <div class="widget box">
+                        <div class="widget-header">
+                            <h4>
+                                <i class="icon-reorder">
+                                </i>
+                                {{ pageInfo.menuSubName }}
+                            </h4>
+                            <div class="toolbar no-padding">
+                                <div class="btn-group">
+
+                                    <button id="btnAdd" class="btn btn-xs btn-success">
+                                        <i class="icon-plus">
+                                        </i>
+                                        添加
+                                    </button>
+                                    <button id="btnEdit" class="btn btn-xs btn-info">
+                                        <i class="icon-edit">
+                                        </i>
+                                        修改
+                                    </button>
+                                    <button id="btnRemove" class="btn btn-xs btn-danger">
+                                        <i class="icon-remove">
+                                        </i>
+                                        删除
+                                    </button>
+                                </div>
+                            </div>
+                            <!--展开收缩按钮
+                            <div class="toolbar no-padding">
+                              <div class="btn-group">
+                                <span class="btn btn-xs widget-collapse">
+                                  <i class="icon-angle-down">
+                                  </i>
+                                </span>
+                              </div>
+                            </div>
+                            -->
+                        </div>
+                        <div class="widget-content" id="contentMain" style="height:580px;overflow: auto;">
+                            <div id="toolbarSearchUser">
+                                <div class="pull-right" style='margin-left: 10px;'>
+                                    <button class="btn btn-default" id="btnSearchUser" type="button"
+                                            style="margin-bottom:3px">查询
+                                    </button>
+                                </div>
+                                <!--
+                                <div class="pull-right" style='margin-left: 10px;'>
+                                    <select id="rsvStatus" name="rsvStatus" onchange="search()" class="form-control">
+                                     <option value="all" >不限</option>
+                                     <option value="1" >已收货</option>
+                                     <option value="0" selected>未收货</option>
+                                 </select>
+                                </div>
+                                -->
+                                <div class="pull-right">
+                                    <input type="text" id="keywords" name="keywords" class="form-control" onkeydown=""
+                                           placeholder="查询关键字"/>
+                                </div>
+                            </div>
+                            <table class="table table-hover"
+                                   id="cusTableUser"
+                                   data-pagination="true"
+                                   data-show-refresh="true"
+                                   data-show-toggle="true"
+                                   data-showColumns="true">
+                                <thead>
+                                <tr>
+                                    <th data-field="id">
+
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+<script>
+
+    $(function () {
+
+        initTableUser()
+        initTablePurview();
+        loadTree();
+        initTableSyspara();
+        initTableDicMainList();
+
+        iniSellerIdSelect2();
+
+        $("#btnSearchUser").bind("click", initTableUser)
+        $("#btnSearchRole").bind("click", initTableRole)
+        $("#btnSearchPurview").bind("click", initTablePurview)
+        $("#btnSearchPara").bind("click", initTableSyspara)
+        $("#btnSearchDicMainList").bind("click", initTableDicMainList)
+
+
+        {% ifequal purviewA "T" %}
+            $("#btnAdd").bind("click", add);
+        {% endifequal %}
+        {% ifequal purviewE "T" %}
+            $("#btnEdit").bind("click", edit);
+        {% endifequal %}
+        {% ifequal purviewD "T" %}
+            $("#btnRemove").bind("click", remove);
+        {% endifequal %}
+
+        //tabs切换事件
+        $("#nav-tabs li").on("click", function () {
+            var num = $(this).index();
+            //console.log(num);
+            //$("#nav-tabs li").eq(num).tab("show");
+            if (num > 0) {
+                $("#submitForm").attr("disabled", "disabled");
+            } else {
+                $("#submitForm").removeAttr("disabled");
+            }
+            $("#tip").html("");
+            if (num >= 1) {
+                var roleId = $("#id").val();
+                if (roleId != "") {
+                    $("#tip").html("注意：修改直接生效，无需提交！！！");
+                }
+            }
+        });
+
+        $("#sellerId").on("change", function (e) {
+            //console.log(this.value);
+            setSeller(this.value)
+        })
+    })
+
+
+    //设置用户对应商家
+    function setSeller(sellerId) {
+        var userId = $("#id").val();
+        if (userId != "0" && userId != "") {
+            $.ajax({
+                type: "POST",
+                url: "/user/setSeller/",
+                data: {userId: userId, sellerId: sellerId},
+                async: false,//true：异步；false：同步
+                success: function (returnObj) {
+                    progressEnd();
+                    //console.log(msg)
+                    if (returnObj.result == "T" && returnObj.scription != "") {
+                        refreshTable("cusTableUser");
+                    } else {
+
+                    }
+                    myAlertAutoClose(returnObj.scription, "", "")
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    progressEnd();
+                    alert(jqXHR.responseText);
+                    //alert("AJAX返回出错，请与技术人员联系！");
+                }
+            });
+        }
+    }
+
+    {% ifequal purviewA "T" %}
+        function add() {
+            $("#acShow").html("添加")
+            $("#formUser")[0].reset();
+            $("#id").val("0");
+            //$("#nav-tabs li").eq(0).tab("show");
+            //将选择卡tab选择到一个
+            setTabDefault("nav-tabs", "tab-content", 0);
+            $("#sellerId").val('').trigger('change');
+            menuDefaultCheckByAdd();
+            //initTableRole();
+            //initTablePurview();
+            $("#modalUser").modal('show');
+        }
+    {% endifequal %}
+
+    {% ifequal purviewE "T" %}
+        function edit() {
+            $("#acShow").html("修改")
+            records = $('#cusTableUser').bootstrapTable("getAllSelections");       
+            if (records.length != 1) {
+                myAlert("请选择一条需要修改的记录！（当前选择 " + records.length + " 条）")
+                return;
+            }
+
+            var record = records[0];
+            var jsonStr = JSON.stringify(record);
+            $("#formUser").setForm(jsonStr);
+            //$("#nav-tabs li").eq(0).tab("show");
+            //将选择卡tab选择到一个
+            setTabDefault("nav-tabs", "tab-content", 0);
+
+            //$("#sellerId").val(record.sellerId).trigger('change');
+            //console.log(record.sellerId)
+            if (parseInt(record.sellerId) > 0) {
+                $("#sellerId").append("<option value='" + record.sellerId + "'>" + record.sellerIdName + "</option>");
+                $("#sellerId").val(record.sellerId).trigger('change');
+            } else {
+                $("#sellerId").val('').trigger('change');
+            }
+            $("#id").val(record.id)
+            menuSetDefault(record.menuIdList);
+            //initTableRole();
+            //initTablePurview();
+            $("#modalUser").modal('show');
+        }
+    {% endifequal %}
+
+    {% ifequal purviewD "T" %}
+        function remove() {
+            //alert($('#menuEditTree').treeview('getSelected', 0).length)
+            //alert($('#menuEditTree').treeview('getChecked', null)[0].id);
+            records = $('#cusTableUser').bootstrapTable("getAllSelections");
+            if (records.length == 0) {
+                myAlert("请选择一条需要删除的记录！")
+                return;
+            }
+            var idsForDelete = ""
+            for (var i = 0; i < records.length; i++) {
+                //alert(objArray[i].name)
+                if (idsForDelete == "") {
+                    idsForDelete = records[i].id
+                } else {
+                    idsForDelete = idsForDelete + "," + records[i].id
+                }
+            }
+            //alert(idsForDelete)
+            var fontSize = 18;
+            var fontColor = "red";
+            var htmlStr = "确定删除所选记录吗？"
+            var alertStr = "<div style='text-align: center;font-weight: bold;font-size: " + fontSize + "px;color:" + fontColor + "'>" + htmlStr + "</div>"
+            bootbox.confirm({
+                title: "操作提示",
+                message: alertStr,
+                buttons: {
+                    confirm: {
+                        label: '确定',
+                        className: 'btn-primary'
+                    },
+                    cancel: {
+                        label: '取消',
+                        className: 'btn-default'
+                    }
+                },
+                callback: function (result) {
+                    if (result) {
+                        //alert('点击确认按钮了');
+                        progressStart("", "", "");
+                        $.ajax({
+                            type: "POST",
+                            url: "/user/ajaxDelUser/",
+                            data: {idsForDelete: idsForDelete},
+                            async: false,//true：异步；false：同步
+                            success: function (returnObj) {
+                                progressEnd();
+                                //console.log(msg)
+                                if (returnObj.result == "T") {
+                                    refreshTable("cusTableUser");
+                                } else {
+
+                                }
+                                myAlert(returnObj.scription, "", "")
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+                                progressEnd();
+                                alert(jqXHR.responseText);
+                                //alert("AJAX返回出错，请与技术人员联系！");
+                            }
+                        });
+                    } else {
+                        //alert('点击取消按钮了');
+                    }
+                }
+            })
+        }
+    {% endifequal %}
+
+
+
+    /*
+     *
+     */
+    function initTableUser() {
+        var tableId = "cusTableUser"
+        //alert("ABC")
+        //先销毁表格
+        $('#' + tableId).bootstrapTable('destroy');
+        //初始化表格,动态从服务器加载数据
+        $("#" + tableId).bootstrapTable({
+            method: "get",  //使用get请求到服务器获取数据
+            toolbar: "#toolbarSearchUser",
+            url: "/user/gridDataUser/", //获取数据的Servlet地址
+            detailView: false,//父子表
+            striped: true,  //表格显示条纹
+            singleSelect: false,//设置True 将禁止多选
+            clickToSelect: true,
+            pagination: true, //启动分页
+            pageSize: 15,  //每页显示的记录数
+            pageNumber: 1, //当前第几页
+            pageList: [10, 15, 20, 25, 50],  //记录数可选列表
+            sortable: true, //是否启用排序
+
+            sortName: "id",
+            sortOrder: "desc",//排序方式
+
+            search: false,  //是否启用查询
+            searchOnEnterKey: true,//设置为 true时，按回车触发搜索方法，否则自动触发搜索方法
+            searchAlign: "right",
+            showColumns: true,  //显示下拉框勾选要显示的列
+            showRefresh: true,  //显示刷新按钮
+            sidePagination: "server", //表示服务端请求
+            columns: [
+                {
+                    field: 'checked',
+                    checkbox: true,
+                    formatter: function (value, row, index) {
+
+                    }//,
+                    /*
+                    footerFormatter: function (value) {
+                        var count = 0;
+                        for (var i in value) {
+                        count += parseInt(value[i].amount);
+                    }
+                        return count;
+                    }
+                    */
+                },
+                {
+                    title: '等级',
+                    field: 'gradeName',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '商家',
+                    field: 'sellerIdName',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '姓名',
+                    field: 'name',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '用户名',
+                    field: 'username',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '是否有效',
+                    field: 'status',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle',
+                    formatter: function (value, row, index) {
+                        if (row.status == "T") {
+                            return "<font color='green'>是</font>"
+                        } else {
+                            return "<font color='red'>否</font>"
+                        }
+                    }
+                },
+                {
+                    title: '说明',
+                    field: 'memo',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                }
+            ],
+            //设置为undefined可以获取pageNumber，pageSize，searchText，sortName，sortOrder
+            //设置为limit可以获取limit, offset, search, sort, order
+            queryParamsType: "undefined",
+            queryParams: function queryParams(params) {   //设置查询参数
+                var keywords = $("#keywords").val();
+                var param = {
+                    pageIndex: params.pageNumber,
+                    pageSize: params.pageSize,
+                    keywords: keywords,
+                    sortName: params.sortName,
+                    sortOrder: params.sortOrder
+                };
+                return param;
+            },
+            onLoadSuccess: function (data) {  //加载成功时执行
+                //layer.msg("加载成功");
+                //alert("加载成功")
+                //alert(data.rows[0].expressSendNum)
+            },
+            onLoadError: function (status) {  //加载失败时执行
+                //layer.msg("加载数据失败", {time : 1500, icon : 2});
+                //alert("加载数据失败")
+            },
+            onPageChange: function (number, size) {
+                //alert(pageNumber)
+            },
+            onCheck: function (row) {
+                //alert(row.id);
+                //setBtnStatus();
+            },
+            onUncheck: function (row) {
+                //alert(row.id);
+                //setBtnStatus();
+            },
+            onCheckAll: function (rows) {
+                //alert(rows.length);
+                //setBtnStatus();
+            },
+            onUncheckAll: function (rows) {
+                //alert(rows.length);
+                //setBtnStatus();
+            },
+            onColumnSwitch: function (field, checked) {
+                if (!checked) {//设置cookie
+                    setTableColumnForHide(tableId, field);
+                } else {
+                    setTableColumnForHideCancel(tableId, field);
+                }
+            },
+            //注册加载子表的事件。注意下这里的三个参数！
+            onExpandRow: function (index, row, $detail) {
+                //InitSubTable(index, row, $detail);
+            }
+        });
+    }
+
+    //设置当前用户的权限，如果没有权限，遇隐藏相应按钮
+    function setUserPurs() {
+
+        {% ifnotequal purviewA "T" %}
+            $("#btnAdd").hide();
+        {% endifnotequal %}
+        {% ifnotequal purviewE "T" %}
+            $("#btnEdit").hide();
+        {% endifnotequal %}
+        {% ifnotequal purviewD "T" %}
+            $("#btnRemove").hide();
+        {% endifnotequal %}
+
+    }
+
+    setUserPurs();//设置权限
+
+
+    //新建用户时，自动选择历史新建时选择过的菜单（数据提交后，清除选择数据cookies）
+    function menuDefaultCheckByAdd() {
+        //新建时设置默认选择的访问菜单
+        var defaultMenupur = $.cookie('menupur');
+        //alert(defaultMenupur);
+        menuSetDefault(defaultMenupur);
+    }
+
+    //设置菜单默认值
+    function menuSetDefault(defaultMenupur) {
+        //alert(defaultMenupur)
+        $('#menuEditTree').treeview('uncheckAll', {silent: true});//取消所有选择
+        if (defaultMenupur != null && defaultMenupur != "") {
+            if (defaultMenupur.substr(0, 1) != ",") {
+                defaultMenupur = "," + defaultMenupur + ",";
+            }
+            //alert(defaultMenupur);
+            var nodeAll = $('#menuEditTree').treeview('getUnselected', null);
+            if (nodeAll) {
+                //alert(nodeAll.length)
+                //alert(JSON.stringify(nodeAll))
+                for (i = 0; i < nodeAll.length; i++) {
+                    var nodeSingle = $('#menuEditTree').treeview("getNode", i);
+                    if (nodeSingle) {
+                        //alert(defaultMenupur.indexOf(","+nodeSingle.classcode+","))
+                        if (defaultMenupur.indexOf("," + nodeSingle.id + ",") >= 0) {
+                            $('#menuEditTree').treeview('checkNode', [i, {silent: true}]);
+                        }
+                    }
+                }
+            } else {
+                //alert("X")
+            }
+        }
+    }
+
+    var treeData;
+
+    function loadTree() {
+        $.ajax({
+            type: "POST",
+            url: "/menu/getTreeJson/",
+            data: {ifshow: "T", grade: "{{ gradeForOther }}"},
+            async: false,//true：异步；false：同步
+            success: function (msg) {
+                //console.log(msg)
+                treeData = msg;
+                //var obj = eval("("+msg+")");
+                //alert(obj.length)
+                //treeMainLength=obj.length;
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                alert(jqXHR.responseText);
+                //alert("AJAX返回出错，请与技术人员联系！");
+            }
+        });
+
+        $('#menuEditTree').treeview({
+            data: treeData,
+            enableLinks: false,
+            showCheckbox: true,
+            //multiSelect:true,
+            uncheckedIcon: "icon-check-empty",
+            checkedIcon: "icon-check",
+            showTags: false,
+            onNodeSelected: function (event, node) { //选中节点
+
+            },
+            onNodeUnselected: function (event, node) { //取消选中节点
+
+            },
+            onNodeChecked: function (event, node) { //选中节点
+                /*
+                   var selectNodes = getChildNodeIdArr(node); //获取所有子节点
+                   if (selectNodes) { //子节点不为空，则选中所有子节点
+                       $('#menuEditTree').treeview('checkNode', [selectNodes, {silent: true}]);
+                   }
+                   var parentNode = $("#menuEditTree").treeview("getNode", node.parentId);
+                   */
+                setParentNodeCheck(node);
+                //设置删除按钮可用
+                setMenus();
+            },
+            onNodeUnchecked: function (event, node) { //取消选中节点
+                var selectNodes = getChildNodeIdArr(node); //获取所有子节点
+                if (selectNodes) { //子节点不为空，则取消选中所有子节点
+                    $('#menuEditTree').treeview('uncheckNode', [selectNodes, {silent: true}]);
+                }
+                setMenus();
+            }
+        });
+    }
+
+    function getChildNodeIdArr(node) {
+        var ts = [];
+        if (node.nodes) {
+            for (x in node.nodes) {
+                ts.push(node.nodes[x].nodeId);
+                if (node.nodes[x].nodes) {
+                    var getNodeDieDai = getChildNodeIdArr(node.nodes[x]);
+                    for (j in getNodeDieDai) {
+                        ts.push(getNodeDieDai[j]);
+                    }
+                }
+            }
+        } else {
+            ts.push(node.nodeId);
+        }
+        return ts;
+    }
+
+    //自动选择父节点
+    function setParentNodeCheck(node) {
+        //alert(node.state.checked)
+        if (node.state.checked) {
+            var parentNode = $("#menuEditTree").treeview("getNode", node.parentId);
+            //alert("P:"+parentNode.nodeId)
+            if (!isNaN(parentNode.nodeId)) {
+                $("#menuEditTree").treeview("checkNode", parentNode.nodeId);
+                setParentNodeCheck(parentNode);
+            }
+        }
+
+
+        /*
+        if (parentNode.nodes) {
+            var checkedCount = 0;
+            for (x in parentNode.nodes) {
+                if (parentNode.nodes[x].state.checked) {
+                    checkedCount ++;
+                } else {
+                    break;
+                }
+            }
+            alert(node.state.checked)
+            alert(checkedCount)
+
+            if (checkedCount === parentNode.nodes.length) {
+                $("#menuEditTree").treeview("checkNode", parentNode.nodeId);
+                setParentNodeCheck(parentNode);
+            }
+
+            if (node.state.checked){
+                setParentNodeCheck(parentNode);
+            }
+        }
+        */
+    }
+
+    /*
+     * 初始化权限表格（）
+     */
+    function initTablePurview() {
+        var userId = $("#id").val();
+        if (userId == "") {
+            userId = "0";
+        }
+        //alert("ABC")
+        //先销毁表格
+        $('#cusTablePurview').bootstrapTable('destroy');
+        //初始化表格,动态从服务器加载数据
+        $("#cusTablePurview").bootstrapTable({
+            method: "get",  //使用get请求到服务器获取数据
+            toolbar: "#toolbarPurview",
+            url: "/purview/gridDataPurview/", //获取数据的Servlet地址
+            detailView: false,//父子表
+            striped: true,  //表格显示条纹
+            singleSelect: false,//设置True 将禁止多选
+            clickToSelect: true,
+            pagination: true, //启动分页
+            pageSize: 10,  //每页显示的记录数
+            pageNumber: 1, //当前第几页
+            pageList: [5, 10, 15, 20, 25],  //记录数可选列表
+            sortable: true, //是否启用排序
+            sortName: "sorts",
+            sortOrder: "desc",//排序方式
+            search: false,  //是否启用查询
+            searchOnEnterKey: true,//设置为 true时，按回车触发搜索方法，否则自动触发搜索方法
+            searchAlign: "right",
+            showColumns: true,  //显示下拉框勾选要显示的列
+            showRefresh: true,  //显示刷新按钮
+            sidePagination: "server", //表示服务端请求
+            columns: [
+                {
+                    title: '权限名称',
+                    field: 'purname',
+                    sortable: true,
+                    halign: 'center',
+                    align: 'left',
+                    valign: 'middle',
+                    formatter: function (value, row, index) {
+                        return value + "（" + row.purcode + "）";
+                    }
+                },
+                {
+                    title: '查看',
+                    field: 'purV',
+                    sortable: false,
+                    align: 'center',
+                    valign: 'middle',
+                    width: '50px',
+                    formatter: function (value, row, index) {
+                        var checked = "";
+                        //console.log(row.purV)
+                        if (row.purV == "T") {
+                            checked = "checked"
+                        }
+                        return "<input type='checkbox' id='purV" + row.purcode + "' onclick=setCheck(this,'" + row.purcode + "') class='uniform' value='V' " + checked + ">";
+                    }
+                },
+                {
+                    title: '添加',
+                    field: 'purA',
+                    sortable: false,
+                    align: 'center',
+                    valign: 'middle',
+                    width: '50px',
+                    formatter: function (value, row, index) {
+                        var checked = "";
+                        if (row.purA == "T") {
+                            checked = "checked"
+                        }
+                        return "<input type='checkbox' id='purA" + row.purcode + "' onclick=setCheck(this,'" + row.purcode + "') class='uniform' value='A' " + checked + ">";
+                    }
+                },
+                {
+                    title: '修改',
+                    field: 'purE',
+                    sortable: false,
+                    align: 'center',
+                    valign: 'middle',
+                    width: '50px',
+                    formatter: function (value, row, index) {
+                        var checked = "";
+                        if (row.purE == "T") {
+                            checked = "checked"
+                        }
+                        return "<input type='checkbox' id='purE" + row.purcode + "' onclick=setCheck(this,'" + row.purcode + "') class='uniform' value='E' " + checked + ">";
+                    }
+                },
+                {
+                    title: '删除',
+                    field: 'purD',
+                    sortable: false,
+                    align: 'center',
+                    valign: 'middle',
+                    width: '50px',
+                    formatter: function (value, row, index) {
+                        var checked = "";
+                        if (row.purD == "T") {
+                            checked = "checked"
+                        }
+                        return "<input type='checkbox' id='purD" + row.purcode + "' onclick=setCheck(this,'" + row.purcode + "') class='uniform' value='D' " + checked + ">";
+                    }
+                },
+                {
+                    title: '说明',
+                    field: 'memo',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                }
+            ],
+            //设置为undefined可以获取pageNumber，pageSize，searchText，sortName，sortOrder
+            //设置为limit可以获取limit, offset, search, sort, order
+            queryParamsType: "undefined",
+            queryParams: function queryParams(params) {   //设置查询参数
+                var keywords = $("#keywordsPurview").val();
+                var param = {
+                    pageIndex: params.pageNumber,
+                    pageSize: params.pageSize,
+                    gradeForLimit: "3",
+                    userId: userId,
+                    keywords: keywords,
+                    grade: "{{ gradeForOther }}",
+                    sortName: params.sortName,
+                    sortOrder: params.sortOrder
+                };
+                return param;
+            },
+            onLoadSuccess: function (data) {  //加载成功时执行
+                //layer.msg("加载成功");
+                //alert("加载成功")
+                //alert(data.rows[0].expressSendNum)
+            },
+            onLoadError: function (status) {  //加载失败时执行
+                //layer.msg("加载数据失败", {time : 1500, icon : 2});
+                //alert("加载数据失败")
+            },
+            onPageChange: function (number, size) {
+                //alert(pageNumber)
+            },
+            onCheck: function (row) {
+                //alert(row.id);
+
+            },
+            onUncheck: function (row) {
+                //alert(row.id);
+
+            },
+            onCheckAll: function (rows) {
+                //alert(rows.length);
+
+            },
+            onUncheckAll: function (rows) {
+                //alert(rows.length);
+
+            },
+            //注册加载子表的事件。注意下这里的三个参数！
+            onExpandRow: function (index, row, $detail) {
+                //InitSubTable(index, row, $detail);
+            }
+        });
+    }
+
+
+    //获取被选中的菜单
+    function getMenusCheck() {
+        var menupur = "";
+        var nodeChecked = $('#menuEditTree').treeview('getChecked', 0);
+        //alert(nodeChecked.length)
+
+        if (nodeChecked.length > 0) {
+            for (i = 0; i < nodeChecked.length; i++) {
+                if (menupur == "") {
+                    menupur = nodeChecked[i].id;
+                } else {
+                    menupur = menupur + "," + nodeChecked[i].id;
+                }
+            }
+        }
+        return menupur
+    }
+
+
+    //设置或取消菜单设置
+    function setMenus() {
+        var userId = $("#id").val();
+        var menuPur = getMenusCheck();
+        if (userId == "") {
+            userId = 0;
+        }
+        //alert(userId)
+        if (userId > 0) {
+            progressStart(".modal-content", 20, -60);
+            $.ajax({
+                type: "POST",
+                url: "/user/setMenu/",
+                data: {userId: userId, menuPur: menuPur},
+                async: false,//true：异步；false：同步
+                success: function (returnObj) {
+                    progressEnd();
+                    if (returnObj.result == "T") {
+                        refreshTable("cusTableUser");
+                    } else {
+
+                    }
+                    myAlertAutoClose(returnObj.scription, "", "")
+                    //console.log(msg)
+                    initTableUser()
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    progressEnd();
+                    alert(jqXHR.responseText);
+                    //alert("AJAX返回出错，请与技术人员联系！");
+                }
+            });
+        } else {
+            $.cookie('menupur', menuPur);
+        }
+    }
+
+
+    //自动设置对应权限及提交数据到数据库
+    function setCheck(obj, purcode) {
+        //alert(obj.value)
+        //alert(purcode)
+        //return;
+        var purList = ""
+        if (obj.checked) {//设置
+            purList = obj.value;
+            if (obj.value == "E") {
+                document.getElementById("purV" + purcode).checked = true;
+                purList = purList + ",V"
+            }
+            if (obj.value == "A") {
+                document.getElementById("purV" + purcode).checked = true;
+                purList = purList + ",V"
+            }
+            if (obj.value == "D") {
+                document.getElementById("purV" + purcode).checked = true;
+                //document.getElementById("purE"+purcode).checked=true;
+                purList = purList + ",V"
+            }
+            //alert(purList);
+            //return;
+            setPur(purcode, purList, "set")
+        } else {//取消设置
+            //alert(obj.value)
+            if (obj.value == "V")//有添加、修改、删除权限时，不能取消查看权限
+            {
+                if (document.getElementById("purA" + purcode).checked == true || document.getElementById("purE" + purcode).checked == true || document.getElementById("purD" + purcode).checked == true) {
+                    myAlert("有添加、修改、删除权限时<br>不能取消查看权限！", 24, "red")
+                    document.getElementById("purV" + purcode).checked = true
+                    return;
+                }
+            }
+            purList = obj.value;
+            setPur(purcode, purList, "cancel");
+        }
+    }
+
+
+    //设置用户权限
+    //purcode:操作的菜单类编号
+    //opType：操作类型（set:设置;cancel:取消设置）
+    function setPur(purcode, purList, opType) {
+        var userId = $("#id").val();
+        //alert(userId)
+        progressStart(".modal-content", 20, -60);
+        $.ajax({
+            type: "POST",
+            url: "/user/setPur/",
+            data: {userId: userId, purcode: purcode, purList: purList, opType: opType},
+            async: false,//true：异步；false：同步
+            success: function (returnObj) {
+                progressEnd();
+                if (returnObj.result == "T") {
+                    refreshTable("cusTableUser");
+                } else {
+
+                }
+                myAlertAutoClose(returnObj.scription, "", "")
+                initTableUser()
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                progressEnd();
+                alert(jqXHR.responseText);
+                //alert("AJAX返回出错，请与技术人员联系！");
+            }
+        });
+    }
+
+
+    /*
+     *
+     */
+    function initTableRole() {
+        var userId = $("#id").val();
+        if (userId == "") {
+            userId = "0";
+        }
+        var tableId = "cusTableRole"
+        //alert("ABC")
+        //先销毁表格
+        $('#' + tableId).bootstrapTable('destroy');
+        //初始化表格,动态从服务器加载数据
+        $("#" + tableId).bootstrapTable({
+            method: "get",  //使用get请求到服务器获取数据
+            toolbar: "#toolbarSearchRole",
+            url: "/role/gridDataRole/", //获取数据的Servlet地址
+            detailView: false,//父子表
+            striped: true,  //表格显示条纹
+            singleSelect: false,//设置True 将禁止多选
+            clickToSelect: true,
+            pagination: true, //启动分页
+            pageSize: 15,  //每页显示的记录数
+            pageNumber: 1, //当前第几页
+            pageList: [10, 15, 20, 25, 50],  //记录数可选列表
+            sortable: true, //是否启用排序
+
+            sortName: "sorts",
+            sortOrder: "",//排序方式
+
+            search: false,  //是否启用查询
+            searchOnEnterKey: true,//设置为 true时，按回车触发搜索方法，否则自动触发搜索方法
+            searchAlign: "right",
+            showColumns: true,  //显示下拉框勾选要显示的列
+            showRefresh: true,  //显示刷新按钮
+            sidePagination: "server", //表示服务端请求
+            columns: [
+                {
+                    field: 'checked',
+                    checkbox: true,
+                    formatter: function (value, row, index) {
+                        //console.log(row.defaultChecked)
+                        if (row.defaultChecked == "T") {
+                            return {
+                                checked: true
+                            }
+                        }
+                    }//,
+                    /*
+                    footerFormatter: function (value) {
+                        var count = 0;
+                        for (var i in value) {
+                        count += parseInt(value[i].amount);
+                    }
+                        return count;
+                    }
+                    */
+                },
+                {
+                    title: '角色名称',
+                    field: 'roleName',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '说明',
+                    field: 'memo',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '排序',
+                    field: 'sorts',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                }
+            ],
+            //设置为undefined可以获取pageNumber，pageSize，searchText，sortName，sortOrder
+            //设置为limit可以获取limit, offset, search, sort, order
+            queryParamsType: "undefined",
+            queryParams: function queryParams(params) {   //设置查询参数
+                var keywords = $("#keywordsRole").val();
+                var param = {
+                    pageIndex: params.pageNumber,
+                    pageSize: params.pageSize,
+                    userId: userId,
+                    keywords: keywords,
+                    sortName: params.sortName,
+                    sortOrder: params.sortOrder
+                };
+                return param;
+            },
+            onLoadSuccess: function (data) {  //加载成功时执行
+                //layer.msg("加载成功");
+                //alert("加载成功")
+                //alert(data.rows[0].expressSendNum)
+                tableLoaded(data);
+            },
+            onLoadError: function (status) {  //加载失败时执行
+                //layer.msg("加载数据失败", {time : 1500, icon : 2});
+                //alert("加载数据失败")
+            },
+            onPageChange: function (number, size) {
+                //alert(pageNumber)
+            },
+            onCheck: function (row) {
+                //alert(row.id);
+                setRole(row.id, "set")
+            },
+            onUncheck: function (row) {
+                //alert(row.id);
+                setRole(row.id, "cancel")
+            },
+            onCheckAll: function (rows) {
+                //alert(rows.length);
+                if (rows.length > 0) {
+                    idList = rows.join(',');
+
+                    setRole(idList, "set")
+                }
+                //setBtnStatus();
+            },
+            onUncheckAll: function (rows) {
+                //alert(rows.length);
+                //setBtnStatus();
+                if (rows.length > 0) {
+                    idList = rows.join(',');
+                    setRole(idList, "cancel")
+                }
+            },
+            onColumnSwitch: function (field, checked) {
+                if (!checked) {//设置cookie
+                    setTableColumnForHide(tableId, field);
+                } else {
+                    setTableColumnForHideCancel(tableId, field);
+                }
+            },
+            //注册加载子表的事件。注意下这里的三个参数！
+            onExpandRow: function (index, row, $detail) {
+                //InitSubTable(index, row, $detail);
+            }
+        });
+    }
+
+    //设置用户角色
+    //roleId:角色ID
+    //opType：操作类型（set:设置;cancel:取消设置）
+    function setRole(roleIds, opType) {
+        var userId = $("#id").val();
+        //alert(userId)
+        progressStart(".modal-content", 20, -60);
+        $.ajax({
+            type: "POST",
+            url: "/user/setRole/",
+            data: {userId: userId, roleIds: roleIds, opType: opType},
+            async: false,//true：异步；false：同步
+            success: function (returnObj) {
+                progressEnd();
+                if (returnObj.result == "T") {
+                    refreshTable("cusTableUser");
+                } else {
+
+                }
+                myAlertAutoClose(returnObj.scription, "", "")
+                initTableUser()
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                progressEnd();
+                alert(jqXHR.responseText);
+                //alert("AJAX返回出错，请与技术人员联系！");
+            }
+        });
+    }
+
+    /*
+     *
+     */
+    function initTableSyspara() {
+        var tableId = "cusTableSyspara"
+        //alert("ABC")
+        //先销毁表格
+        $('#' + tableId).bootstrapTable('destroy');
+        //初始化表格,动态从服务器加载数据
+        $("#" + tableId).bootstrapTable({
+            method: "get",  //使用get请求到服务器获取数据
+            toolbar: "#toolbarSearchpara",
+            url: "/syspara/grid_data_select", //获取数据的Select地址
+            detailView: false,//父子表
+            striped: true,  //表格显示条纹
+            singleSelect: false,//设置True 将禁止多选
+            clickToSelect: true,
+            pagination: true, //启动分页
+            pageSize: 15,  //每页显示的记录数
+            pageNumber: 1, //当前第几页
+            pageList: [5, 10, 15, 20, 25],  //记录数可选列表
+            sortable: true, //是否启用排序
+            sortName: "id",
+            sortOrder: "desc",//排序方式
+            search: false,  //是否启用查询
+            searchOnEnterKey: true,//设置为 true时，按回车触发搜索方法，否则自动触发搜索方法
+            searchAlign: "right",
+            showColumns: true,  //显示下拉框勾选要显示的列
+            showRefresh: true,  //显示刷新按钮
+            sidePagination: "server", //表示服务端请求
+            columns: [
+                {
+                    field: 'checked',
+                    checkbox: true,
+                    formatter: function (value, row, index) {
+
+                    }//,
+                    /*
+                    footerFormatter: function (value) {
+                        var count = 0;
+                        for (var i in value) {
+                        count += parseInt(value[i].amount);
+                    }
+                        return count;
+                    }
+                    */
+                },
+                {
+                    title: '参数类型',
+                    field: 'paraType',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '参数名称',
+                    field: 'paraShow',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '参数标志',
+                    field: 'paraTag',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '参数值',
+                    field: 'paraValue',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '备注',
+                    field: 'memo',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                }
+            ],
+            //设置为undefined可以获取pageNumber，pageSize，searchText，sortName，sortOrder
+            //设置为limit可以获取limit, offset, search, sort, order
+            queryParamsType: "undefined",
+            queryParams: function queryParams(params) {   //设置查询参数
+                var keywords = $("#keywordsPara").val();
+                var param = {
+                    pageIndex: params.pageNumber,
+                    pageSize: params.pageSize,
+                    keywords: keywords,
+                    sortName: params.sortName,
+                    sortOrder: params.sortOrder
+                };
+                return param;
+            },
+            onLoadSuccess: function (data) {  //加载成功时执行
+                //layer.msg("加载成功");
+                //alert("加载成功")
+                //alert(data.rows[0].expressSendNum)
+                tableLoaded(data);
+            },
+            onLoadError: function (status) {  //加载失败时执行
+                //layer.msg("加载数据失败", {time : 1500, icon : 2});
+                //alert("加载数据失败")
+            },
+            onPageChange: function (number, size) {
+                //alert(pageNumber)
+            },
+            onCheck: function (row) {
+                //alert(row.id);
+                //setBtnStatus();
+                setPara(row.id, 'T')
+            },
+            onUncheck: function (row) {
+                //alert(row.id);
+                //setBtnStatus();
+                setPara(row.id, 'F')
+            },
+            onCheckAll: function (rows) {
+                var id_list = (rows || []).map(function (value) {
+                    return value.id
+                }).join(',')
+                setPara(id_list, 'T')
+            },
+            onUncheckAll: function (rows) {
+                //alert(rows.length);
+                //setBtnStatus();
+                var id_list = (rows || []).map(function (value) {
+                    return value.id
+                }).join(',')
+                setPara(id_list, 'F')
+            },
+            onColumnSwitch: function (field, checked) {
+                if (!checked) {//设置cookie
+                    setTableColumnForHide(tableId, field);
+                } else {
+                    setTableColumnForHideCancel(tableId, field);
+                }
+            },
+            //注册加载子表的事件。注意下这里的三个参数！
+            onExpandRow: function (index, row, $detail) {
+                //InitSubTable(index, row, $detail);
+            }
+        });
+    }
+
+    //设置用户参数
+    //purcode:操作的菜单类编号
+    //opType：操作类型（T:设置;F:取消设置）
+    function setPara(id_list, opType) {
+        var userId = $("#id").val();
+        console.log(userId)
+        progressStart(".modal-content", 20, -60);
+        $.ajax({
+            type: "POST",
+            url: "/user/setPara/",
+            data: {userId: userId, id_list : id_list, opType: opType},
+            async: false,//true：异步；false：同步
+            success: function (returnObj) {
+                progressEnd();
+                if (returnObj.result == "T") {
+                    refreshTable("cusTableUser");
+                } else {
+
+                }
+                myAlertAutoClose(returnObj.scription, "", "")
+                initTableUser()
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                progressEnd();
+                alert(jqXHR.responseText);
+                //alert("AJAX返回出错，请与技术人员联系！");
+            }
+        });
+    }
+
+
+
+    var autoExpandIdList="";//加载后自动展开的项ID列表
+    /*
+     *
+     */
+    function initTableDicMainList(){
+        var tableId="cusTableDicMainList"
+        //alert("ABC")
+        //先销毁表格
+        $('#'+tableId).bootstrapTable('destroy');
+        //初始化表格,动态从服务器加载数据
+        $("#"+tableId).bootstrapTable({
+            method: "get",  //使用get请求到服务器获取数据
+            toolbar:"#toolbarSearchDicMainList",
+            url: "/dicMainList/gridDataDicMainList", //获取数据的Servlet地址
+            detailView: true,//父子表
+            striped: true,  //表格显示条纹
+            singleSelect:false,//设置True 将禁止多选
+            clickToSelect:true,
+            pagination: true, //启动分页
+            pageSize: 15,  //每页显示的记录数
+            pageNumber:1, //当前第几页
+            pageList: [5, 10, 15, 20, 25],  //记录数可选列表
+            sortable:true,  //是否启用排序
+            sortName :"sorts",
+            sortOrder: "",//排序方式
+            search: false,  //是否启用查询
+            searchOnEnterKey:true,//设置为 true时，按回车触发搜索方法，否则自动触发搜索方法
+            searchAlign:"right",
+            showColumns: true,  //显示下拉框勾选要显示的列
+            showRefresh: true,  //显示刷新按钮
+            sidePagination: "server", //表示服务端请求
+            columns:[
+                    // {
+                    //     field : 'checked',
+                    //     checkbox : true,
+                    //     formatter : function(value,row,index){
+
+                    //     }//,
+                        
+                    //     footerFormatter: function (value) {
+                    //         var count = 0;
+                    //         for (var i in value) {
+                    //         count += parseInt(value[i].amount);
+                    //     }
+                    //         return count;
+                    //     }
+                        
+                    // },
+                    {
+                        title: '相关关键字',
+                        field: 'keywords',
+                        sortable: true,
+                        align: 'center',
+                        valign: 'middle'
+                    },
+                    {
+                        title: '字典名称',
+                        field: 'dicName',
+                        sortable: true,
+                        align: 'center',
+                        valign: 'middle'
+                    },
+                    {
+                        title: '字典标志',
+                        field: 'dicTag',
+                        sortable: true,
+                        align: 'center',
+                        valign: 'middle'
+                    },
+                    {
+                        title: '是否允许商家维护可选项',
+                        field: 'allowSellerOp',
+                        sortable: true,
+                        align: 'center',
+                        valign: 'middle',
+                        formatter : function(value,row,index){
+                            if (value == "T"){
+                                return "<font color='green'>是</font>"
+                            }else{
+                                return "<font color='red'>否</font>"
+                            }
+                        }
+                    },
+                    {
+                        title: '备注',
+                        field: 'memo',
+                        sortable: true,
+                        align: 'center',
+                        valign: 'middle'
+                    }
+            ],
+            //设置为undefined可以获取pageNumber，pageSize，searchText，sortName，sortOrder
+            //设置为limit可以获取limit, offset, search, sort, order
+            queryParamsType : "undefined",
+            queryParams: function queryParams(params) {   //设置查询参数
+                var keywords=$("#keywordsDicMain").val();
+                var param = {
+                    pageIndex: params.pageNumber,
+                    pageSize: params.pageSize,
+                    keywords:keywords,
+                    sortName:params.sortName,
+                    sortOrder:params.sortOrder
+                };
+                return param;
+            },
+            onLoadSuccess: function(data){  //加载成功时执行
+                tableLoaded(data);
+                Plugins.init();
+                autoExpandRow();//自动展开项
+                //layer.msg("加载成功");
+                //alert("加载成功")
+                //alert(data.rows[0].expressSendNum)
+            },
+            onLoadError: function(status){  //加载失败时执行
+                //layer.msg("加载数据失败", {time : 1500, icon : 2});
+                //alert("加载数据失败")
+            },
+            onPageChange:function(number,size){
+                //alert(pageNumber)
+            },
+            onCheck:function(row){
+                //alert(row.id);
+                //setBtnStatus();
+                //console.log(row.id)
+            },
+            onUncheck:function(row){
+                //alert(row.id);
+                //setBtnStatus();
+            },
+            onCheckAll:function(rows){
+                //alert(rows.length);
+                //setBtnStatus();
+            },
+            onUncheckAll:function(rows){
+                //alert(rows.length);
+                //setBtnStatus();
+
+            },
+            onColumnSwitch:function(field, checked){
+                if (!checked){//设置cookie
+                    setTableColumnForHide(tableId,field);
+                }else{
+                    setTableColumnForHideCancel(tableId,field);
+                }
+            },
+            //注册加载子表的事件。注意下这里的三个参数！
+            onExpandRow: function (index, row, $detail) {
+                //alert(row.id)
+                //alert("before:"+autoExpandIdList)
+                if (autoExpandIdList==""){
+                    autoExpandIdList=index+""//row.id
+                }else{
+                    tempStr1=","+autoExpandIdList+",";
+                    tempStr2=","+index+",";
+                    //alert(tempStr1.indexOf(tempStr2));
+                    if (tempStr1.indexOf(tempStr2)==-1){
+                        autoExpandIdList=autoExpandIdList+","+index//row.id
+                    }
+                }
+                initTableDicMainListForSelect(index, row, $detail)
+            },
+            //收起时
+            onCollapseRow:function (index, row) {
+                //alert(row.id);
+                //alert("before:"+autoExpandIdList)
+                var newIdList="";
+                tempArray=autoExpandIdList.split(',');
+                for (i=0;i<tempArray.length;i++) {
+                    if (tempArray[i]+""!=index+""){
+                        if (newIdList==""){
+                            newIdList=tempArray[i];
+                        }else{
+                            newIdList=newIdList+","+tempArray[i];
+                        }
+                    }
+                }
+                autoExpandIdList=newIdList;
+                //alert("after:"+autoExpandIdList)
+            }
+        });
+    }
+
+
+    function set_dic(id_list, opType) {
+        var userId = $("#id").val();
+        console.log('狗屎')
+        progressStart(".modal-content", 20, -60);
+        $.ajax({
+            type: "POST",
+            url: "/user/set_dic/",
+            data: {userId: userId, id_list : id_list, opType: opType},
+            async: false,//true：异步；false：同步
+            success: function (returnObj) {
+                progressEnd();
+                if (returnObj.result == "T") {
+                    refreshTable("cusTableUser");
+                } else {
+
+                }
+                myAlertAutoClose(returnObj.scription, "", "")
+                initTableUser()
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                progressEnd();
+                alert(jqXHR.responseText);
+                //alert("AJAX返回出错，请与技术人员联系！");
+            }
+        });
+    }
+
+    function autoExpandRow(){
+       //alert(autoExpandIdList)
+        if (autoExpandIdList!=""){
+            tempArray=autoExpandIdList.split(',');
+            for (i=0;i<tempArray.length;i++) {
+                $('#cusTableDicMainList').bootstrapTable('expandRow',tempArray[i]);
+            }
+        }
+    }
+
+
+    function initTableDicMainListForSelect(index, row, $detail){
+        var dicMainListId = row.id;
+        //alert(dicMainListId);
+        var cur_table = $detail.html('<table></table>').find('table');
+        //初始化表格,动态从服务器加载数据
+        $(cur_table).bootstrapTable({
+            method: "get",  //使用get请求到服务器获取数据
+            toolbar:"",
+            url: "/dicMainListForSelect/gridDataDicMainListForSelect", //获取数据的Servlet地址
+            detailView: false,//父子表
+            striped: true,  //表格显示条纹
+            singleSelect:false,//设置True 将禁止多选
+            clickToSelect:true,
+            pagination: false, //启动分页
+            pageSize: 15,  //每页显示的记录数
+            pageNumber:1, //当前第几页
+            pageList: [10, 15, 20, 25,50],  //记录数可选列表
+            sortable:true,  //是否启用排序
+
+            sortName :"sorts",
+            sortOrder: "",//排序方式
+
+            search: false,  //是否启用查询
+            searchOnEnterKey:true,//设置为 true时，按回车触发搜索方法，否则自动触发搜索方法
+            searchAlign:"right",
+            showColumns: false,  //显示下拉框勾选要显示的列
+            showRefresh: false,  //显示刷新按钮
+            sidePagination: "server", //表示服务端请求
+            columns:[
+                    {
+                        field : 'checked',
+                        checkbox : true,
+                        formatter : function(value,row,index){
+
+                        }
+                    },
+                    {
+                        title: '可选项显示文本',
+                        field: 'textForSelect',
+                        sortable: true,
+                        align: 'center',
+                        valign: 'middle'
+                    },
+                    {
+                        title: '可选项值',
+                        field: 'valueForSelect',
+                        sortable: true,
+                        align: 'center',
+                        valign: 'middle'
+                    },
+                    {
+                        title: '备注',
+                        field: 'memo',
+                        sortable: true,
+                        align: 'center',
+                        valign: 'middle'
+                    },
+                    {
+                        title: '排序',
+                        field: 'sorts',
+                        sortable: true,
+                        align: 'center',
+                        valign: 'middle'
+                    },{
+                        title: "操作（<span class='bs-tooltip'{% ifnotequal purview0012A "T" %} data-html='true' data-original-title='无权限'{% endifnotequal %}><button class='btn btn-xs btn-success' {% ifnotequal purview0012A "T" %}disabled{% endifnotequal %} onclick='addSelects("+row.id+")'><i class='icon-plus'></i>添加可选项</button></span>）",
+                        field: 'valueForSelect',
+                        align: 'center',
+                        valign: 'middle',
+                        formatter: function (value, row, index) {
+                            var objStr=escape(JSON.stringify(row));
+
+                            var e="<span class='bs-tooltip'{% ifnotequal purview0012E "T" %}data-html='true' data-original-title='无权限'{% endifnotequal %}><button style='margin-left: 0px;' {% ifnotequal purview0012E "T" %}disabled{% endifnotequal %} class='btn btn-xs btn-primary' onclick=javascript:editSelects('"+objStr+"')><i class='icon-edit'></i>修改</button></span>"
+                            var d="<span class='bs-tooltip'{% ifnotequal purview0012D "T" %}data-html='true' data-original-title='无权限'{% endifnotequal %}><button style='margin-left: 5px;' {% ifnotequal purview0012D "T" %}disabled{% endifnotequal %} class='btn btn-xs btn-danger' onclick=javascript:removeSelects('"+row.id+"')><i class='icon-remove'></i>删除</button></span>"
+                            var mp="<span class='bs-tooltip'{% ifnotequal purview0012E "T" %}data-html='true' data-original-title='无权限'{% endifnotequal %}><button style='margin-left: 5px;' {% ifnotequal purview0012E "T" %}disabled{% endifnotequal %} class='btn btn-xs btn-default' onclick=javascript:moveSelectUp('"+row.id+"')><i class='icon-arrow-up'></i>上移</button></span>"
+                            var md="<span class='bs-tooltip'{% ifnotequal purview0012E "T" %}data-html='true' data-original-title='无权限'{% endifnotequal %}><button style='margin-left: 5px;' {% ifnotequal purview0012E "T" %}disabled{% endifnotequal %} class='btn btn-xs btn-default' onclick=javascript:moveSelectDown('"+row.id+"')><i class='icon-arrow-down'></i>下移</button></span>"
+                            return e+d+mp+md;
+                        }
+                    }
+
+            ],
+            //设置为undefined可以获取pageNumber，pageSize，searchText，sortName，sortOrder
+            //设置为limit可以获取limit, offset, search, sort, order
+            queryParamsType : "undefined",
+            queryParams: function queryParams(params) {   //设置查询参数
+                var param = {
+                    pageIndex: params.pageNumber,
+                    pageSize: params.pageSize,
+                    dicMainListId:dicMainListId,
+                    sortName:params.sortName,
+                    sortOrder:params.sortOrder
+                };
+                return param;
+            },
+            onLoadSuccess: function(data){  //加载成功时执行
+                Plugins.init();
+                //layer.msg("加载成功");
+                //alert("加载成功")
+                //alert(data.rows[0].expressSendNum)
+                tableLoaded(data);
+            },
+            onLoadError: function(status){  //加载失败时执行
+                //layer.msg("加载数据失败", {time : 1500, icon : 2});
+                //alert("加载数据失败")
+            },
+            onPageChange:function(number,size){
+                //alert(pageNumber)
+            },
+            onCheck:function(row){
+                //alert(row.id);
+                //setBtnStatus();
+                //console.log(row.id)
+                set_dic(row.id, 'T')
+            },
+            onUncheck:function(row){
+                    //alert(row.id);
+                    //setBtnStatus();
+                set_dic(row.id, 'F')
+            },
+            onCheckAll:function(rows){
+                //alert(rows.length);
+                    //setBtnStatus();
+                var id_list = (rows || []).map(function (value) {
+                    return value.id
+                }).join(',')
+                set_dic(id_list, 'T')
+            },
+            onUncheckAll:function(rows){
+                //alert(rows.length);
+                //setBtnStatus();
+                var id_list = (rows || []).map(function (value) {
+                    return value.id
+                }).join(',')
+                set_dic(id_list, 'T')
+            },
+            onColumnSwitch:function(field, checked){
+
+            },
+            //注册加载子表的事件。注意下这里的三个参数！
+            onExpandRow: function (index, row, $detail) {
+                //InitSubTable(index, row, $detail);
+            }
+        });
+    }
+
+
+    function iniSellerIdSelect2() {
+        var currentPage = 1;
+        var pageSize = 20;
+        var PageInfo = {
+            "PageSize": pageSize,
+            "PageIndex": currentPage
+        };
+        $("#sellerId").select2({
+            //theme: "bootstrap",
+            allowClear: true,
+            language: "zh-CN",
+            placeholder: "商家（供应商）名称",
+            minimumInputLength: 0, //输入两个字符之后进行请求加载
+            separator: ",", // 分隔符
+            ajax: {
+                url: "/seller/gridDataSeller/",
+                dataType: 'json',
+                type: "get",
+                delay: 500,
+                //延时0.5秒之后再进行请求
+                data: function (params) {
+                    //alert("ABCDE")
+                    var keywords = "";
+                    if (params.term) {
+                        keywords = params.term.trim();
+                    }
+                    //alert(keywords)
+                    return {
+                        keywords: keywords,
+                        pageIndex: PageInfo.PageIndex,
+                        pageSize: PageInfo.PageSize
+                    }; //这里是要传递给后台的数据
+                },
+                processResults: function (res) {
+                    //alert(JSON.stringify(res))
+                    //alert(res.rows.length)
+                    //下面是对返回的数据进行组装判断
+                    if (res.rows.length) {
+                        var arr = [];
+                        for (var i in res.rows) {
+                            arr.push({
+                                id: res.rows[i].id,
+                                text: res.rows[i].sellerName
+                            });
+                        }
+                        if (res.rows.length < PageInfo.PageSize) //如果返回的数据小于20,那么就禁止滑动滚动条进行远程加载
+                            return {
+                                results: arr,
+                                pagination: {
+                                    more: false
+                                }
+                            };
+                        else { //否则就可以滚动继续加载
+                            PageInfo.PageIndex = currentPage + 1; //这里如果请求成功则把页数+1
+                            return {
+                                results: arr,
+                                pagination: {
+                                    more: true
+                                }
+                            };
+                        }
+                    } else { //这个也是同样的效果
+                        return {
+                            results: [],
+                            pagination: {
+                                more: false
+                            }
+                        };
+                    }
+                },
+                cache: true
+            }
+        });
+    }
+
+
+</script>
+{% include 'common/foot.html' %}

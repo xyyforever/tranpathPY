@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>tempDic翻译</title>
+    <script src="../../static/js/jquery-3.2.1.js"></script>
+    <link href="../../static/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+    <style>
+        .container div{
+            float:left;
+        }
+    </style>
+</head>
+
+
+<body>
+    <div class="container">
+        <div>
+            <textarea rows="15" class="form-control" cols="30" name="tempdic" id="tempdic" style="width: 350px"></textarea>
+        </div>
+        <div>
+            <input type="button" class="btn btn-danger" value="翻译" onclick="myFunction()">
+        </div>
+        <div>
+            <textarea rows="15" class="form-control" cols="30" name="result" id="result" style="width: 350px"></textarea>
+        </div>
+    </div>
+
+
+</body>
+<script>
+    function myFunction(){
+        var data=$("#tempdic").val();
+        $.ajax({
+            type: "POST",
+            url: "/index/translate/",
+            data: {data:data},
+            success: function(msg){
+                console.log(msg)
+                var newStr=""
+                var array=msg.split("|")
+                for (var i=0;i<array.length;i++){
+                    if (newStr==""){
+                        newStr = array[i];
+                    }else{
+                        newStr +="\n"+array[i]
+                    }
+                }
+                console.log(newStr);
+                $("#result").val(newStr);
+                $("#result").select();
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                //alert(jqXHR.responseText);
+                //alert("AJAX返回出错，请与技术人员联系！");
+                //getTradeCount()
+                //document.getElementById("tradeCount").innerHTML="<font color='red'><b>数据请求失败，请稍候！</b></font>"
+            }
+        });
+    }
+</script>
+</html>

@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">  
+  <head>
+  	<meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <title>{{ sysTitle }}</title>
+{% include 'common/head.html' %}
+  	<script>
+      $(document).ready(function() {
+        App.init();
+        Plugins.init();
+        FormComponents.init()
+      });
+   	</script>
+    <script>
+    	$(function(){
+            $("#formMenu").validate({
+                debug:true, //调试模式，即使验证成功也不会跳转到目标页面
+                errorElement: 'label',
+                errorPlacement: function(error, element) {
+                    error.appendTo(element.parent());
+                },
+                rules:{     //配置验证规则，key就是被验证的dom对象，value就是调用验证的方法(也是json格式)
+                    name:{
+                        required:true  //必填。如果验证方法不需要参数，则配置为true
+                    },
+                    grade:{
+                        required:true  //必填。如果验证方法不需要参数，则配置为true
+                    }
+                },
+                messages:{
+                    name:{
+                        required:"请输入菜单名称！"
+                    },
+                    grade:{
+                        required:"请选择等级！"
+                    }
+                },
+                submitHandler: function(form) {//提交表单
+                    var jsonObj=form2JsonObj("formMenu");
+
+                    progressStart(".modal-content",20,-60)
+                    $.ajax({
+                        url: "/menu/ajaxSaveMenu/",
+                        type: "post",
+                        data: jsonObj,
+                        success: function (returnObj) {
+                            progressEnd();
+                            //alert("提交成功，返回结果:" + returnObj.result);
+                            if (returnObj.result == "T"){
+                                //refreshTable("cusTableMenu");
+                                loadTree("","","","")
+                                $("#modalMenu").modal('hide');
+                            }else{
+                                myAlert(returnObj.scription,"","")
+                            }
+                        },
+                        error:function(jqXHR, textStatus, errorThrown){
+                            progressEnd();
+                            alert(jqXHR.responseText);
+                            alert("AJAX返回出错，请与技术人员联系！");
+                        }
+                    });
+                }
+            });
+
+
+       	});
+    </script>
+  </head>
+  <body>
+{% include 'common/top.html' %}
+    <div id="container">
+{% include 'common/left.html' %}
+      <div id="content">
+
+
+
+
+      	<!--
+          	作者：2243788@qq.com
+          	时间：2018-06-11 15:18:47
+          	描述：添加修改菜单模态窗口
+          -->
+        <div class="modal fade" id="modalMenu">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                  ×
+                </button>
+                <h4 class="modal-title">
+                  	<span id="acShow"></span>菜单信息
+                </h4>
+              </div>
+              <form id="formMenu" class="form-horizontal row-border" onsubmit="return false" action="">
+              	<div class="modal-body">
+              		<div class="tabbable tabbable-custom">
+                        <ul class="nav nav-tabs" id="nav-tabs">
+                          	<li class="active">
+                                <a href="#tab_1_1" data-toggle="tab">
+                                    基本信息
+                                </a>
+                          	</li>
+                            <!--
+                          	<li>
+                                <a href="#tab_1_2" data-toggle="tab">
+                                    访问菜单
+                                </a>
+                          	</li>
+                          	<li>
+                                <a href="#tab_1_3" data-toggle="tab">
+                                    相关权限
+                                </a>
+                          	</li>
+                          	-->
+                        </ul>
+                        <div class="tab-content">
+                          	<div class="tab-pane active" id="tab_1_1">
+                          		<div style="padding-right: 5px;">
+                                <!--字段开始-->
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        <font color='red'>*</font>菜单名称 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <input type='text' id='name' name='name' class='form-control input-width-large'>
+                                        </div>
+                                    </div>
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        <font color='red'>*</font>等级 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <select id='grade' name='grade' class='form-control input-width-large'></select>
+                                        </div>
+                                    </div>
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        父菜单 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <select id='parentId' name='parentId' class='form-control input-width-large'></select>
+                                        </div>
+                                    </div>
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        链接URL ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <input type='text' id='linkfile' name='linkfile' class='form-control input-width-large'>
+                                        </div>
+                                    </div>
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        参数 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <input type='text' id='paras' name='paras' class='form-control input-width-large'>
+                                        </div>
+                                    </div>
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        链接打开位置 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <input type='text' id='target' name='target' class='form-control input-width-large'>
+                                        </div>
+                                    </div>
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        图标类名 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <input type='text' id='iconShow' name='iconShow' class='form-control input-width-large'>
+                                        </div>
+                                    </div>
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        备注 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <textarea id='memo' name='memo' rows=5 class='form-control input-width-large'></textarea>
+                                        </div>
+                                    </div>
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        是否显示 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <label class='radio-inline'>
+                                                <input type='radio' class='' id='ifshow0' name='ifshow' value='T' checked>显示
+                                            </label>
+                                            <label class='radio-inline'>
+                                                <input type='radio' class='' id='ifshow1' name='ifshow' value='F' >隐藏
+                                            </label>
+                                        </div>
+                                    </div>
+                                <!--字段结束-->
+
+                                </div>
+                          	</div>
+                            <!--
+                          	<div class="tab-pane" id="tab_1_2">
+
+                          	</div>
+                          	<div class="tab-pane" id="tab_1_3">
+
+                          	</div>
+                          	-->
+                        </div>
+                    </div>
+              	</div>
+             	<div class="modal-footer">
+             		<div id="tip">
+
+             		</div>
+	              	<input type="hidden" id="id" name="id" value="">
+	                <button type="button" class="btn btn-default" data-dismiss="modal">
+	                  	关闭
+	                </button>
+	                <button type="submit" id="submitForm" class="btn btn-primary">
+	                  	提交
+	                </button>
+              	</div>
+            </div>
+            </form>
+          </div>
+        </div>
+		<!--
+        	作者：2243788@qq.com
+        	时间：2018-06-11 15:18:47
+        	描述：添加修改菜单模态窗口--结束
+        -->
+
+
+
+
+
+        <div class="container">
+  <div class="crumbs">
+    <ul id="breadcrumbs" class="breadcrumb">
+      <li>
+        <i class="icon-home">
+        </i>
+        {{ pageInfo.menuMainName }}
+      </li>
+      <li class="current">
+         {{ pageInfo.menuSubName }}
+      </li>
+    </ul>
+    <!--
+    <ul class="crumb-buttons">
+      <li>
+        <a href="charts.html" title="">
+          <i class="icon-signal">
+          </i>
+          <span>
+            统计
+          </span>
+        </a>
+      </li>
+      <li class="dropdown">
+        <a href="#" title="" data-toggle="dropdown">
+          <i class="icon-tasks">
+          </i>
+          <span>
+            用户
+            <strong>
+              (+3)
+            </strong>
+          </span>
+          <i class="icon-angle-down left-padding">
+          </i>
+        </a>
+        <ul class="dropdown-menu pull-right">
+          <li>
+            <a href="form_components.html" title="">
+              <i class="icon-plus">
+              </i>
+              添加新用户
+            </a>
+          </li>
+          <li>
+            <a href="http://envato.stammtec.de/themeforest/melon/tables_dynamic.html"
+            title="">
+              <i class="icon-reorder">
+              </i>
+              查看
+            </a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+    -->
+  </div>
+          <div class="row" style="padding-top: 10px;">
+            <div class="col-md-12">
+              <div class="widget box">
+                <div class="widget-header">
+                  <h4>
+                    <i class="icon-reorder">
+                    </i>
+					{{ pageInfo.menuSubName }}
+                  </h4>
+                  <div class="toolbar no-padding">
+                    <div class="btn-group">
+	                  	<button id="btnMoveUp" class="btn btn-xs">
+		                    <i class="icon-arrow-up">
+		                    </i>
+							上移
+	                  	</button>
+	                  	<button id="btnMoveDown" class="btn btn-xs">
+		                    <i class="icon-arrow-down">
+		                    </i>
+							下移
+	                  	</button>
+	                  <button id="btnAddMain" class="btn btn-xs btn-success">
+	                    <i class="icon-plus">
+	                    </i>
+						添加主菜单
+	                  </button>
+	                  <button id="btnAddSub" class="btn btn-xs btn-primary">
+	                    <i class="icon-plus">
+	                    </i>
+						添加子菜单
+	                  </button>
+	                  <button id="btnEdit" class="btn btn-xs btn-info">
+	                    <i class="icon-edit">
+	                    </i>
+						修改
+	                  </button>
+	                  <button id="btnRemove" class="btn btn-xs btn-danger">
+	                    <i class="icon-remove">
+	                    </i>
+						删除
+	                  </button>
+	                </div>
+	              </div>
+                  <!--展开收缩按钮
+                  <div class="toolbar no-padding">
+                    <div class="btn-group">
+                      <span class="btn btn-xs widget-collapse">
+                        <i class="icon-angle-down">
+                        </i>
+                      </span>
+                    </div>
+                  </div>
+                  -->
+                </div>
+                <div class="widget-content" id="contentMain" style="height:580px;overflow: auto;">
+                    <div id="menuEditTree" style="margin-top: 10px"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+<script>
+
+    $(function(){
+        loadTree("","","","");
+
+        $("#btnAddSub").attr("disabled","disabled");
+        $("#btnEdit").attr("disabled","disabled");
+        $("#btnRemove").attr("disabled","disabled");
+
+        $("#btnMoveUp").bind("click",moveUp);
+        $("#btnMoveDown").bind("click",moveDown);
+
+        $("#btnAddMain").bind("click",addMain);
+        $("#btnAddSub").bind("click",addSub);
+        $("#btnEdit").bind("click",edit);
+        $("#btnRemove").bind("click",remove);
+
+        $("#grade").select2({
+            placeholder:"请选择",
+            openOnEnter:false,
+            minimumResultsForSearch: -1,
+            data:[{'id': '3', 'text': '系统级'}, {'id': '2', 'text': '商家级'}, {'id': '1', 'text': '客服级'}]
+        });
+        $("#grade").val('').trigger('change');
+
+
+    })
+
+
+function bindMainMenu() {
+    $.ajax({
+        type: "POST",
+        url: "/menu/getMainMenuJson/",
+        data: {},
+        async: false,//true：异步；false：同步
+        success: function(msg){
+            //console.log(msg)
+            var obj = JSON.parse(msg);
+            console.log(obj)
+            $("#parentId").empty();
+            $("#parentId").select2({
+                placeholder:"请选择",
+                openOnEnter:false,
+                data:obj
+            });
+            $("#parentId").val('').trigger('change');
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            alert(jqXHR.responseText);
+            //alert("AJAX返回出错，请与技术人员联系！");
+        }
+    });
+}
+
+function addMain(){
+	$("#acShow").html("添加主")
+    bindMainMenu()
+	$("#formMenu")[0].reset();
+	$("#id").val("");
+	$("#grade").val('').select2({minimumResultsForSearch: -1});
+	$("#parentId").val('0').select2({minimumResultsForSearch: -1});
+	$("#modalMenu").modal('show');
+}
+
+function addSub(){
+	//alert("ABC")
+	$("#acShow").html("添加子")
+    bindMainMenu()
+	$("#formMenu")[0].reset();
+	$("#id").val("");
+	$("#grade").val('').select2({minimumResultsForSearch: -1});
+	//$("#grade").val('').trigger('change');
+	var node=$('#menuEditTree').treeview('getSelected', 0)[0];
+	$("#parentId").val(node.id).trigger('change');
+	$("#modalMenu").modal('show');
+}
+
+function edit(){
+	$("#acShow").html("修改")
+    bindMainMenu()
+	var node=$('#menuEditTree').treeview('getSelected', 0)[0];
+	var jsonStr=JSON.stringify(node);
+	//console.log(jsonStr)
+	//alert($("#ifshow").attr("checked"))
+	$("#formMenu").setForm(jsonStr);
+	//$("#parentId").prop("disabled",true);
+	//$("#grade").val(['0',node.grade]).trigger('change');
+	$("#grade").val(node.grade).select2({minimumResultsForSearch: -1});
+	console.log(node.pId);
+	$("#parentId").val(parseInt(node.pId)).select2({minimumResultsForSearch: -1});
+	//$("#parentId").val(node.pId).trigger('change');
+	//alert(stat)
+	$("#modalMenu").modal('show');
+}
+
+function remove(){
+	//alert($('#menuEditTree').treeview('getSelected', 0).length)
+	//alert($('#menuEditTree').treeview('getChecked', null)[0].id);
+	var objArray=$('#menuEditTree').treeview('getChecked', null);
+	var idsForDelete=""
+	for (var i=0;i<objArray.length;i++){
+		//alert(objArray[i].name)
+		if (idsForDelete==""){
+			idsForDelete=objArray[i].id
+		}else{
+			idsForDelete=idsForDelete+","+objArray[i].id
+		}
+	}
+	//alert(idsForDelete)
+	var fontSize=18;
+	var fontColor="red";
+	var htmlStr="确定删除所选记录吗？<br>（子菜单将一并删除）"
+	var alertStr="<div style='text-align: center;font-weight: bold;font-size: "+fontSize+"px;color:"+fontColor+"'>"+htmlStr+"</div>"
+	bootbox.confirm({
+	  	title: "操作提示",
+	  	message: alertStr,
+	  	buttons: {
+            confirm:{
+                label: '确定',
+                className: 'btn-primary'
+            },
+            cancel: {
+                label: '取消',
+                className: 'btn-default'
+            }
+        },
+	  	callback: function(result) {
+            if(result) {
+                //alert('点击确认按钮了');
+                progressStart("","","");
+				$.ajax({
+					type: "POST",
+					url: "/menu/delMenu/",
+					data: {idsForDelete:idsForDelete},
+					async: false,//true：异步；false：同步
+					success: function(msg){
+						progressEnd();
+						//console.log(msg)
+						if (msg=="F"){
+							myAlert("删除失败！","28","red");
+						}else{
+							loadTree("","","","");
+						}
+					},
+					error: function (jqXHR, textStatus, errorThrown) {
+						progressEnd();
+						alert(jqXHR.responseText);
+						//alert("AJAX返回出错，请与技术人员联系！");
+					}
+				});
+            } else {
+                //alert('点击取消按钮了');
+            }
+        }
+	})
+
+}
+
+//上移
+function moveUp(){
+
+	var moveType="up";
+	moveSort(moveType);
+}
+
+//下移
+function moveDown(){
+	var moveType="down";
+	moveSort(moveType);
+}
+
+//移动菜单
+function moveSort(moveType){
+	var node=$('#menuEditTree').treeview('getSelected',0)[0];
+	var curNodeId=node.nodeId;
+	var id=node.id;
+	$.ajax({
+		type: "POST",
+		url: "/menu/moveSorts/",
+		data: {id:id,moveType:moveType},
+		async: false,//true：异步；false：同步
+		success: function(msg){
+			//console.log(msg)
+			if (msg=="F"){
+				myAlert("操作失败！","28","red");
+			}else{
+				if (msg=="T"){
+				    //alert(id)
+					loadTree("","","",id);
+				}
+			}
+		},
+		error: function (jqXHR, textStatus, errorThrown) {
+			alert(jqXHR.responseText);
+			//alert("AJAX返回出错，请与技术人员联系！");
+		}
+	});
+	//myAlert("上移！"+node.name,"","")
+}
+
+
+/*
+* checkedIds:默认checked的记录Id列表（checkbox）
+* disabledIds:默认disabled的记录Id列表
+* expandedIds:默认expanded的记录Id列表
+* selectedIds:默认selected的记录Id列表
+* */
+
+function loadTree(checkedIds,disabledIds,expandedIds,selectedIds){
+    const data = {
+            checkedIds:checkedIds,
+            disabledIds:disabledIds,
+            expandedIds:expandedIds,
+            selectedIds:selectedIds}
+    console.log('dd', data)
+	$.ajax({
+		type: "POST",
+		url: "/menu/getTreeJson/",
+		data: {userId:"",
+            ifshow:"",
+            checkedIds:checkedIds,
+            disabledIds:disabledIds,
+            expandedIds:expandedIds,
+            selectedIds:selectedIds},
+		async: true,//true：异步；false：同步
+		success: function(msg){
+		    console.log('msg', JSON.parse(msg))
+			$('#menuEditTree').treeview({
+            data: msg,
+            enableLinks:false,
+            showCheckbox:true,
+            uncheckedIcon:"icon-check-empty",
+            checkedIcon:"icon-check",
+            showTags:false,
+            onNodeSelected:function(event,node) { //选中节点
+                $("#btnAddSub").removeAttr("disabled");
+                $("#btnEdit").removeAttr("disabled");
+                $("#btnMoveUp").removeAttr("disabled");
+                $("#btnMoveDown").removeAttr("disabled");
+                //console.log(node.pId)
+                if (parseInt(node.pId)>0){
+                    $("#btnAddSub").attr("disabled","disabled");
+                }
+            },
+            onNodeUnselected:function(event,node) { //取消选中节点
+                //alert(node.tags)
+                $("#btnAddSub").attr("disabled","disabled");
+                $("#btnEdit").attr("disabled","disabled");
+                $("#btnMoveUp").attr("disabled","disabled");
+                $("#btnMoveDown").attr("disabled","disabled");
+            },
+            onNodeChecked: function(event, node) { //选中节点
+                var selectNodes = getChildNodeIdArr(node); //获取所有子节点
+                if (selectNodes) { //子节点不为空，则选中所有子节点
+                    $('#menuEditTree').treeview('checkNode', [selectNodes, {silent: true}]);
+                }
+                var parentNode = $("#menuEditTree").treeview("getNode", node.pId);
+                setParentNodeCheck(node);
+                //设置删除按钮可用
+                $("#btnRemove").removeAttr("disabled");
+            },
+            onNodeUnchecked: function(event, node) { //取消选中节点
+                var selectNodes = getChildNodeIdArr(node); //获取所有子节点
+                if (selectNodes) { //子节点不为空，则取消选中所有子节点
+                    $('#menuEditTree').treeview('uncheckNode', [selectNodes, {silent: true}]);
+                }
+                //设置删除按钮不可用
+                if ($('#menuEditTree').treeview('getChecked', null)==0){
+                    $("#btnRemove").attr("disabled","disabled");
+                }
+            }
+        });
+		},
+		error: function (jqXHR, textStatus, errorThrown) {
+			alert(jqXHR.responseText);
+			//alert("AJAX返回出错，请与技术人员联系！");
+		}
+	});
+
+
+}
+
+
+
+function getChildNodeIdArr(node) {
+    var ts = [];
+    if (node.nodes) {
+        for (x in node.nodes) {
+            ts.push(node.nodes[x].nodeId);
+            if (node.nodes[x].nodes) {
+                var getNodeDieDai = getChildNodeIdArr(node.nodes[x]);
+                for (j in getNodeDieDai) {
+                    ts.push(getNodeDieDai[j]);
+                }
+            }
+        }
+    } else {
+        ts.push(node.nodeId);
+    }
+    return ts;
+}
+
+function setParentNodeCheck(node) {
+    var parentNode = $("#menuEditTree").treeview("getNode", node.parentId);
+    if (parentNode.nodes) {
+        var checkedCount = 0;
+        for (x in parentNode.nodes) {
+            if (parentNode.nodes[x].state.checked) {
+                checkedCount ++;
+            } else {
+                break;
+            }
+        }
+        if (checkedCount === parentNode.nodes.length) {
+            $("#menuEditTree").treeview("checkNode", parentNode.nodeId);
+            setParentNodeCheck(parentNode);
+        }
+    }
+}
+
+
+//设置当前用户的权限，如果没有权限，遇隐藏相应按钮
+function setUserPurs(){
+	
+}
+setUserPurs();//设置权限
+
+</script>
+{% include 'common/foot.html' %}

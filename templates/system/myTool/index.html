@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>我的工具首页（myTool）</title>
+{% include 'common/head.html' %}
+</head>
+<body>
+    <div class="container" style="margin-top: 10px">
+        <button type="button" id="btnImportExport" class="btn btn-default">Excel导入/导出</button>
+        <br><br>
+        <button type="button" id="btnCode" class="btn btn-default">代码生成器</button>
+    </div>
+</body>
+</html>
+<script>
+    $("#btnImportExport").bind('click',function () {
+        window.open('/myTool/excel/')
+    });
+
+    $("#btnCode").bind('click',function () {
+        window.open('/myTool/code/')
+    });
+</script>

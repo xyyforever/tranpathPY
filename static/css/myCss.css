@@ -1,0 +1,214 @@
+
+
+.modal-body{
+	padding-top: 10px;
+	padding-bottom: 10px;
+	overflow: auto;
+}
+.row-border .form-group{
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+.row-border .form-group input{
+	float: left;
+	margin-right: 10px;
+}
+.row-border .form-group select{
+	float: left;
+	margin-right: 10px;
+}
+.row-border .form-group .select2-container{
+	float: left;
+	margin-right: 10px;
+}
+.form-horizontal .control-label{
+	padding-right: 5px;
+}
+.modal-footer{
+	margin-top: 0px;
+	margin-left: -5px;
+	margin-right: -5px;
+}
+
+#modalEditWarePropExtendMain .modal-footer{
+	margin-left: 0px;
+	margin-right: 0px;
+}
+
+
+.col-xs-1, .col-xs-2, .col-xs-3, .col-xs-4, .col-xs-5, .col-xs-6, .col-xs-7, .col-xs-8, .col-xs-9, .col-xs-10, .col-xs-11, .col-xs-12, .col-sm-1, .col-sm-2, .col-sm-3, .col-sm-4, .col-sm-5, .col-sm-6, .col-sm-7, .col-sm-8, .col-sm-9, .col-sm-10, .col-sm-11, .col-sm-12, .col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9, .col-md-10, .col-md-11, .col-md-12, .col-lg-1, .col-lg-2, .col-lg-3, .col-lg-4, .col-lg-5, .col-lg-6, .col-lg-7, .col-lg-8, .col-lg-9, .col-lg-10, .col-lg-11, .col-lg-12 {
+    padding-right: 5px;
+    padding-left: 5px;
+}
+
+.widget {
+    margin-bottom: 15px;
+}
+
+/*
+表格相关修正
+* */
+.fixed-table-toolbar .btn-group > .btn-group:last-child > .btn {
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+}
+
+.fixed-table-container {
+    border-radius: 0px;
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+}
+
+/*修正标题行高度*/
+.fixed-table-container thead th .th-inner, .fixed-table-container tbody td .th-inner {
+    line-height: 19px;
+}
+
+/*显示页显示调整*/
+.fixed-table-pagination div.pagination, .fixed-table-pagination .pagination-detail {
+    margin-top: 2px;
+    margin-bottom: 2px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/*分页选择每页显示记录数量的选择框*/
+.page-list .btn-group .btn{
+	height: 24px;
+	padding-top: 3px;
+}
+
+/*页码显示调整*/
+.fixed-table-pagination .pagination a {
+    padding: 6px 10px;
+    line-height: 1;
+}
+
+.fixed-table-pagination div.pagination .pagination {
+    margin: 0;
+    margin-top: 4px;
+}
+
+.fixed-table-body{
+	padding-right: 1px;
+}
+
+/*
+表格相关修正-over
+* */
+
+.modal-footer #tip{/*模态窗口底部提示信息*/
+	/*width: 320px;*/
+	margin: 0 auto;
+	height: 24px;
+	color: red;
+	font-weight: bold;
+	font-size:12px;
+	float: left;
+	text-align: center;
+}
+
+.modalAboutAlert .modal-body{
+	height: auto !important;
+}
+
+.modalAboutAlert .modal-footer{
+	margin-left: 0px;
+	margin-right: 0px;
+}
+
+/*
+ 多选框样式
+ * */
+.select2-selection--multiple{
+	/*height: 32px;*/
+}
+
+.select2-search__field{
+	width: 100% !important;
+}
+
+.select2-container--default .select2-selection--multiple {
+    border-radius: 0px;
+}
+
+/*select2固定宽度*/
+.select2-container--default {
+/*	width: 210px !important;*/
+}
+
+/*日期选择*/
+.datetimepicker { z-index:99999 !important}
+
+/*table下间隔*/
+#contentMain .clearfix{
+	padding-top: 10px;
+}
+
+.modal-dialog .widget-content{
+	height: 100% !important;
+}
+
+
+
+@media screen and (min-width: 768px){
+	.modal-dialog {
+    	width: 850px;
+	}
+	
+	.modalAboutAlert{
+    	width: 600px;
+    	margin-top: 150px;
+    }
+    
+    .modal-footer #tip{/*模态窗口底部提示信息*/
+		/*width: 600px;*/
+		margin: 0 auto;
+		height: 30px;
+		color: red;
+		font-weight: bold;
+		font-size:18px;
+		float: left;
+		text-align: center;
+	}
+}
+
+@media screen and (max-width: 768px){
+	.modal .fixed-table-toolbar .columns-right{
+		display: none;
+	}
+	
+	.bootstrap-table .fixed-table-toolbar .bs-bars .btn{
+		display: none;
+	}
+	
+	.bootstrap-table .fixed-table-toolbar .bs-bars{
+		margin-left: -10px;
+	}
+}
+
+/**/
+.messenger-on-top{
+	top:55px !important;
+}
+
+/*查询条件位置修正*/
+.divForSearch{
+	margin-left: 5px;
+}	
+
+#toolbarForSearch .select2-container .select2-selection--single{  
+  	height:32px;  
+  	line-height: 32px;
+  	margin-top: -4px;
+}
+
+#toolbarForSearch .select2-selection__arrow{
+	margin-top: -2px;
+}
+/*查询条件位置修正OVER*/
+
+#contentMain{
+	padding-top: 0px;
+	padding-bottom: 0px;
+}

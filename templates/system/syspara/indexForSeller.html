@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <title>{{ sysTitle }}</title>
+    {% include 'common/head.html' %}
+    <script>
+        $(document).ready(function () {
+            App.init();
+            Plugins.init();
+            FormComponents.init()
+        });
+    </script>
+    <script>
+        $(function () {
+
+        });
+    </script>
+</head>
+<body>
+{% include 'common/top.html' %}
+<div id="container">
+    {% include 'common/left.html' %}
+    <div id="content">
+        <div class="container">
+            <div class="crumbs">
+                <ul id="breadcrumbs" class="breadcrumb">
+                    <li>
+                        <i class="icon-home">
+                        </i>
+                        {{ pageInfo.menuMainName }}
+                    </li>
+                    <li class="current">
+                        {{ pageInfo.menuSubName }}
+                    </li>
+                </ul>
+
+            </div>
+            <div class="row" style="padding-top: 10px;">
+                <div class="col-md-12">
+                    <div class="widget box">
+                        <div class="widget-header">
+                            <h4>
+                                <i class="icon-reorder">
+                                </i>
+                                {{ pageInfo.menuSubName }}
+                            </h4>
+                            <div class="toolbar no-padding">
+                                <div class="btn-group">
+
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="widget-content" id="contentMain" style="height:580px;overflow: auto;">
+                            <div id="toolbarSearchSyspara">
+
+                                <div class="pull-right" style='margin-left: 10px;'>
+                                    <button class="btn btn-default" id="btnSearchSyspara" style="margin-bottom:3px">查询
+                                    </button>
+                                </div>
+
+                                <div class="pull-right">
+                                    <input type="text" id="keywords" name="keywords" class="form-control" onkeydown=""
+                                           placeholder="查询关键字"/>
+                                </div>
+                            </div>
+                            <table class="table table-hover"
+                                   id="cusTableSyspara"
+                                   data-pagination="true"
+                                   data-show-refresh="true"
+                                   data-show-toggle="true"
+                                   data-showColumns="true">
+                                <thead>
+                                <tr>
+                                    <th data-field="id">
+
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+<script>
+
+    $(function () {
+
+        initTableSyspara()
+
+        $("#btnSearchSyspara").bind("click", initTableSyspara)
+
+
+    })
+
+    //修改表字段值
+    function setParaValue(inputTip, sysparaId) {
+        inputTip = unescape(inputTip);//空格处理
+        bootbox.prompt({
+            buttons: {
+                confirm: {
+                    label: '确定'
+                },
+                cancel: {
+                    label: '取消'
+                }
+            },
+            size: "small",
+            title: inputTip,
+            callback: function (result) {
+                /* result = String containing user input if OK clicked or null if Cancel clicked */
+                if (result != null) {
+                    progressStart("", "", "");
+                    $.ajax({
+                        type: "POST",
+                        url: "/syspara/sellerSetValue/",
+                        data: {sysparaId: sysparaId, paraValue: result},
+                        async: false,//true：异步；false：同步
+                        success: function (returnObj) {
+                            //alert(returnObj)
+                            progressEnd();
+                            if (returnObj.result == "T") {
+                                refreshTable("cusTableSyspara");
+                            } else {
+
+                            }
+                            myAlert(returnObj.scription, "", "")
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            progressEnd();
+                            alert(jqXHR.responseText);
+                            //alert("AJAX返回出错，请与技术人员联系！");
+                        }
+                    });
+                }
+            }
+        })
+    }
+
+
+    /*
+     *
+     */
+    function initTableSyspara() {
+        var tableId = "cusTableSyspara"
+        //alert("ABC")
+        //先销毁表格
+        $('#' + tableId).bootstrapTable('destroy');
+        //初始化表格,动态从服务器加载数据
+        $("#" + tableId).bootstrapTable({
+            method: "get",  //使用get请求到服务器获取数据
+            toolbar: "#toolbarSearchSyspara",
+            url: "/syspara/gridDataSyspara", //获取数据的Servlet地址
+            detailView: false,//父子表
+            striped: true,  //表格显示条纹
+            singleSelect: false,//设置True 将禁止多选
+            clickToSelect: true,
+            pagination: true, //启动分页
+            pageSize: 15,  //每页显示的记录数
+            pageNumber: 1, //当前第几页
+            pageList: [5, 10, 15, 20, 25],  //记录数可选列表
+            sortable: true,	//是否启用排序
+            sortName: "id",
+            sortOrder: "desc",//排序方式
+            search: false,  //是否启用查询
+            searchOnEnterKey: true,//设置为 true时，按回车触发搜索方法，否则自动触发搜索方法
+            searchAlign: "right",
+            showColumns: true,  //显示下拉框勾选要显示的列
+            showRefresh: true,  //显示刷新按钮
+            sidePagination: "server", //表示服务端请求
+            columns: [
+                {
+                    title: '参数类型',
+                    field: 'paraType',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '参数名称',
+                    field: 'paraShow',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '参数标志',
+                    field: 'paraTag',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '参数值',
+                    field: 'paraValue',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle',
+                    formatter: function (value, row, index) {
+                        var returnValue = value;
+                        {% ifequal allowV "T" %}
+                            var inputTip = escape("请输入参数值：<br>当前：<font color=\"red\">" + value + "</font>")
+                            returnValue = returnValue + " <a href=javascript:setParaValue('" + inputTip + "','" + row.id + "')><i class='icon-edit'></i></a>"
+                        {% else %}
+                            returnValue = returnValue + " <span class='bs-tooltip' data-html='true' data-original-title='无权限'><i class='icon-edit'></i></span>"
+                        {% endifequal %}
+                        return returnValue;
+                    }
+                },
+                {
+                    title: '备注',
+                    field: 'memo',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                }
+
+            ],
+            //设置为undefined可以获取pageNumber，pageSize，searchText，sortName，sortOrder
+            //设置为limit可以获取limit, offset, search, sort, order
+            queryParamsType: "undefined",
+            queryParams: function queryParams(params) {   //设置查询参数
+                var keywords = $("#keywords").val();
+                var param = {
+                    pageIndex: params.pageNumber,
+                    pageSize: params.pageSize,
+                    keywords: keywords,
+                    sortName: params.sortName,
+                    sortOrder: params.sortOrder
+                };
+                return param;
+            },
+            onLoadSuccess: function (data) {  //加载成功时执行
+                //layer.msg("加载成功");
+                //alert("加载成功")
+                //alert(data.rows[0].expressSendNum)
+                tableLoaded(data);
+                Plugins.init();
+            },
+            onLoadError: function (status) {  //加载失败时执行
+                //layer.msg("加载数据失败", {time : 1500, icon : 2});
+                //alert("加载数据失败")
+            },
+            onPageChange: function (number, size) {
+                //alert(pageNumber)
+            },
+            onCheck: function (row) {
+                //alert(row.id);
+                //setBtnStatus();
+            },
+            onUncheck: function (row) {
+                //alert(row.id);
+                //setBtnStatus();
+            },
+            onCheckAll: function (rows) {
+                //alert(rows.length);
+                //setBtnStatus();
+            },
+            onUncheckAll: function (rows) {
+                //alert(rows.length);
+                //setBtnStatus();
+            },
+            onColumnSwitch: function (field, checked) {
+                if (!checked) {//设置cookie
+                    setTableColumnForHide(tableId, field);
+                } else {
+                    setTableColumnForHideCancel(tableId, field);
+                }
+            },
+            //注册加载子表的事件。注意下这里的三个参数！
+            onExpandRow: function (index, row, $detail) {
+                //InitSubTable(index, row, $detail);
+            }
+        });
+    }
+
+
+</script>
+{% include 'common/foot.html' %}

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <title>我的管理系统abc</title>
+    {% include 'common/head.html' %}
+    <script>
+        $(document).ready(function () {
+            App.init();
+            Plugins.init();
+            FormComponents.init()
+        });
+    </script>
+    <script>
+        $(function () {
+
+            //判断是否有此页面数据的查看权限
+            if ("{{ allowV }}" != "T") {
+                myAlertBack("您<span style='color:red'>没有权限</span>访问此页面！（{{ purCode }}）", "", "");
+            }
+
+
+            $("#formDicArea").validate({
+                debug: true, //调试模式，即使验证成功也不会跳转到目标页面
+                errorElement: 'label',
+                errorPlacement: function (error, element) {
+                    error.appendTo(element.parent());
+                },
+                rules: {     //配置验证规则，key就是被验证的dom对象，value就是调用验证的方法(也是json格式)
+                    name: {
+                        required: true  //必填。如果验证方法不需要参数，则配置为true
+                    }
+                },
+                messages: {
+                    name: {
+                        required: "请输入类目名称！"
+                    }
+                },
+                submitHandler: function () {//提交表单
+                    var jsonObj = form2JsonObj("formDicArea");
+                    // 在保存之后 直接把选中的清除，不然会影响下一步操作
+                    selectedNodes = []
+                    $('#btnAddSub').attr('disabled', 'disabled')
+                    $('#btnEdit').attr('disabled', 'disabled')
+                    progressStart(".modal-content", 20, -60)
+                    $.ajax({
+                        url: "/dicWareclass/ajax_save_wareclass/",
+                        type: "post",
+                        data: jsonObj,
+                        success: function (returnObj) {
+                            progressEnd();
+                            //alert("提交成功，返回结果:" + returnObj.result);
+                            if (returnObj.result == "T") {
+                                $("#modalDicArea").modal('hide');
+                                // 如果当前是创建子节点，且子节点没有打开，就打开
+                                initialTree()
+                            } else {
+                                myAlert(returnObj.scription, "", "")
+                            }
+                        },
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            progressEnd();
+                            alert(jqXHR.responseText);
+                            alert("AJAX返回出错，请与技术人员联系！");
+                        }
+                    });
+                }
+            });
+
+
+        });
+    </script>
+</head>
+<body>
+{% include 'common/top.html' %}
+<div id="container">
+    {% include 'common/left.html' %}
+
+    <div id="content">
+        <div class="modal fade" id="modalDicArea">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                            ×
+                        </button>
+                        <h4 class="modal-title">
+                            <span id="acShow"></span>商品类目维护
+                        </h4>
+                    </div>
+                    <form id="formDicArea" class="form-horizontal row-border" onsubmit="return false" action="">
+                        <div class="modal-body">
+                            <div class="tabbable tabbable-custom">
+                                <ul class="nav nav-tabs" id="nav-tabs">
+                                    <li class="active">
+                                        <a href="#tab_1_1" data-toggle="tab">
+                                            基本信息
+                                        </a>
+                                    </li>
+                                </ul>
+                                <div class="tab-content" id="tab-content">
+                                    <div class="tab-pane active" id="tab_1_1">
+                                        <div style="padding-right: 5px;">
+                                            <!--字段开始-->
+                                            <div id="parent-form-item" class='form-group'>
+                                                <label class='col-md-3 control-label'>
+                                                    父类 ：
+                                                </label>
+                                                <div class='col-md-9'>
+                                                    <input disabled type="text" id="partnerName" name="partnerName">
+                                                </div>
+                                            </div>
+
+                                            <div class='form-group'>
+                                                <label class='col-md-3 control-label'>
+                                                    <font color='red'>*</font>类别名称 ：
+                                                </label>
+                                                <div class='col-md-9'>
+                                                    <input type='text' id='name' name='name'
+                                                           class='form-control input-width-large'>
+                                                </div>
+                                            </div>
+                                            <div class='form-group'>
+                                                <label class='col-md-3 control-label'>
+                                                    备注 ：
+                                                </label>
+                                                <div class='col-md-9'>
+                                                    <textarea id='memo' name='memo' rows=5
+                                                              class='form-control input-width-large'></textarea>
+                                                </div>
+                                            </div>
+                                            <!--字段结束-->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <div id="tip">
+                                <input type="hidden" id="id" name="id">
+                                <input type="hidden" id="parentId" name="parentId">
+                            </div>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">
+                                关闭
+                            </button>
+                            <button type="submit" id="submitForm" class="btn btn-primary">
+                                提交
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="crumbs">
+                <ul id="breadcrumbs" class="breadcrumb">
+                    <li>
+                        <i class="icon-home">
+                        </i>
+                        {{ pageInfo.menuMainName }}
+                    </li>
+                    <li class="current">
+                        {{ pageInfo.menuSubName }}
+                    </li>
+                </ul>
+
+            </div>
+            <div class="row" style="padding-top: 10px;">
+                <div class="col-md-12">
+                    <div class="widget box">
+                        <div class="widget-header">
+                            <h4>
+                                <i class="icon-reorder">
+                                </i>
+                                {{ pageInfo.menuSubName }}
+                            </h4>
+                            <div class="toolbar no-padding">
+                                <div class="btn-group">
+
+                                    <button id="btn_open" class="btn btn-xs">
+                                        全部展开
+                                    </button>
+                                    <button id="btn_merge" class="btn btn-xs">
+                                        全部合并
+                                    </button>
+
+                                    {#                        <button id="btnMoveUp" class="btn btn-xs">#}
+                                    {#                            <i class="icon-arrow-up">#}
+                                    {#                            </i>#}
+                                    {#                            上移#}
+                                    {#                        </button>#}
+                                    {#                        <button id="btnMoveDown" class="btn btn-xs">#}
+                                    {#                            <i class="icon-arrow-down">#}
+                                    {#                            </i>#}
+                                    {#                            下移#}
+                                    {#                        </button>#}
+                                    <button id="btnAddMain" class="btn btn-xs btn-success">
+                                        <i class="icon-plus">
+                                        </i>
+                                        添加主类
+                                    </button>
+                                    <button id="btnAddSub" class="btn btn-xs btn-primary">
+                                        <i class="icon-plus">
+                                        </i>
+                                        添加子类
+                                    </button>
+                                    <button id="btnEdit" class="btn btn-xs btn-info">
+                                        <i class="icon-edit">
+                                        </i>
+                                        修改
+                                    </button>
+                                    <button id="btnRemove" class="btn btn-xs btn-danger">
+                                        <i class="icon-remove">
+                                        </i>
+                                        删除
+                                    </button>
+                                </div>
+                            </div>
+                            <!--展开收缩按钮
+                            <div class="toolbar no-padding">
+                              <div class="btn-group">
+                                <span class="btn btn-xs widget-collapse">
+                                  <i class="icon-angle-down">
+                                  </i>
+                                </span>
+                              </div>
+                            </div>
+                            -->
+                        </div>
+                        <div class="widget-content" id="contentMain" style="height:580px;overflow: auto;">
+                            <div id="toolbarSearchDicArea">
+                                <div class="pull-right" style='margin-right: 20px;'>
+                                    <button class="btn btn-default" id="btnSearchDicArea" type="button"
+                                            style="margin-bottom:3px;">查询
+                                    </button>
+                                </div>
+
+                                <div class="pull-right">
+                                    <input type="text" id="keywordsDicArea" name="keywordsDicArea" class="form-control"
+                                           onkeydown="" placeholder="查询关键字"/>
+                                </div>
+                            </div>
+                            <table class="table table-hover">
+                            </table>
+                            <div id="tree"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+<script>
+    // 全局变量  在crud之后 会把每个节点扩展保存
+    // 所有选中的node，
+    var selectedNodes = []
+    // 所有点击的单选框
+    var checkedList = []
+    // 所有的扩展
+    var expandedList = []
+    $(function () {
+
+        initialTree()
+
+        $("#btn_open").bind("click", open_all);
+        $("#btn_merge").bind("click", merge_all);
+
+
+        {% ifequal purviewA "T" %}
+            $("#btnAddSub").bind("click", addSub);
+            $("#btnAddMain").bind("click", addMain);
+        {% endifequal %}
+        {% ifequal purviewE "T" %}
+            $("#btnEdit").bind("click", edit);
+        {% endifequal %}
+        {% ifequal purviewD "T" %}
+            $("#btnRemove").bind("click", remove);
+            $("#btnSearchDicArea").bind('click', search)
+        {% endifequal %}
+    })
+
+
+    function initialTree() {
+        $.ajax({
+            type: "GET",
+            url: "/dicWareclass/getTreeJson/",
+            data: {},
+            async: true,//true：异步；false：同步
+            success: function (msg) {
+                var obj = eval('(' + msg + ')');
+                // 数据的遍历，
+                var arr = obj.map(function (x) {
+                    // 因为parentId会被改造，所以使用 其他变量保存状态
+                    x.pid = parseInt(x.parentId)
+                    return x
+                })
+                // 中间的对象，辅助 父子关系的建立
+                // es6建议直接使用 new Map(),因为对象key不可以存数字，只能存字符串
+                var parentMap = {};
+                var treeData = [];
+                // 第一次 对 arr 遍历，有子节点的都放入对象
+                // [{id: 2, parentId: 1},
+                //  {id: 3, parentId: 1},
+                //  {id: 4, parentId: 2}]
+                // 如 {
+                //  "0": [1节点]，
+                //  "1": [2节点，3节点]，
+                //  "2"：[4节点]
+                // }
+                for (var i = 0, len = arr.length; i < len; i++) {
+                    // 添加 之前保存的状态
+                    arr[i].state = {
+                        // es6使用includes
+                        checked: ~checkedList.indexOf(parseInt(arr[i].id)),
+                        selected: false,
+                        expanded: ~expandedList.indexOf(parseInt(arr[i].id))
+                    }
+                    // 为每个节点添加 子节点
+                    arr[i].nodes = [];
+                    // 为每个节点添加 text
+                    arr[i].text = arr[i].name
+                    // 根据对象是否已经有 parentId 来 创建 或者 添加 数据
+                    parentMap.hasOwnProperty(parseInt(arr[i].parentId)) ? parentMap[parseInt(arr[i].parentId)].push(arr[i]) : parentMap[parseInt(arr[i].parentId)] = [arr[i]]
+                }
+                // 第二次 对arr 遍历
+                // 建立树结构
+                for (var i = 0, len = arr.length; i < len; i++) {
+                    // 如果对象中有 该数据的子node，取出来 赋数值
+                    arr[i].nodes = parentMap[parseInt(arr[i].id)]
+                    // 如果 他是顶层的数据 直接放入 treeData
+                    if (arr[i].parentId === '0') treeData = treeData.concat(arr[i])
+                }
+                $('#tree').treeview({
+                    data: treeData,
+                    enableLinks: false,
+                    showCheckbox: true,
+                    uncheckedIcon: "icon-check-empty",
+                    checkedIcon: "icon-check",
+                    showTags: false,
+                    // 几个回调函数确定 全局状态
+                    onNodeSelected: function (event, node) { //选中节点
+                        $("#btnAddSub").removeAttr("disabled");
+                        $("#btnEdit").removeAttr("disabled");
+                        selectedNodes = selectedNodes.concat(node)
+                        if (selectedNodes.length > 1) {
+                            $('#btnAddSub').attr('disabled', 'disabled')
+                            $('#btnEdit').attr('disabled', 'disabled')
+                        }
+                    },
+                    onNodeUnselected: function (event, node) { //取消选中节点
+                        //alert(node.tags)
+                        $("#btnAddSub").attr("disabled", "disabled");
+                        $("#btnEdit").attr("disabled", "disabled");
+                        selectedNodes = selectedNodes.filter(function (value) {
+                            return value.id !== node.id
+                        })
+                        if (selectedNodes.length === 1) {
+                            $('#btnAddSub').removeAttr('disabled')
+                            $('#btnEdit').removeAttr('disabled')
+                        }
+                    },
+                    onNodeChecked: function (event, node) { //选中节点
+                        var selectNodes = getChildNodeIdArr(node); //获取所有子节点
+                        if (selectNodes) { //子节点不为空，则选中所有子节点
+                            $('#tree').treeview('checkNode', [selectNodes, {silent: true}]);
+                        }
+                        checkedList = checkedList.concat(node.id)
+                        setParentNodeCheck(node);
+                        //设置删除按钮可用
+                        $("#btnRemove").removeAttr("disabled");
+                    },
+                    onNodeUnchecked: function (event, node) { //取消选中节点
+                        var selectNodes = getChildNodeIdArr(node); //获取所有子节点
+                        if (selectNodes.length) { //子节点不为空，则取消选中所有子节点
+                            $('#tree').treeview('uncheckNode', [selectNodes, {silent: true}]);
+                        }
+
+                        // 祖先节点的uncheck会触发 祖先的 变化 会触发上面的导致无法使用。后边在写
+                        {#var ancestors = getAncestors(node) // 获取所有祖先节点#}
+                        {#console.log('anc', ancestors)#}
+                        {#if (ancestors.length) {#}
+                        {#    $('#tree').treeview('uncheckNode', [ancestors, {silent: false}]);#}
+                        //{#}#}
+
+                        {#$('#tree').treeview('checkNode', [selectNodes, {silent: true}]);#}
+                        checkedList = checkedList.filter(function (value) {
+                            return value !== node.id
+                        })
+                        //设置删除按钮不可用
+                        if (!checkedList.length) {
+                            $("#btnRemove").attr("disabled", "disabled");
+                        }
+                    },
+                    onNodeExpanded: function (event, node) {
+                        expandedList = expandedList.concat(node.id)
+                    },
+                    onNodeCollapsed: function (event, node) {
+                        expandedList = expandedList.filter(function (value) {
+                            return value !== node.id
+                        })
+                    }
+                });
+                $('#tree').treeview('collapseAll', {silent: true});
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                console.log(jqXHR.responseText);
+            }
+        });
+
+
+    }
+
+
+    function getChildNodeIdArr(node) {
+        var ts = [];
+        if (node.nodes) {
+            for (x in node.nodes) {
+                ts.push(node.nodes[x].nodeId);
+                if (node.nodes[x].nodes) {
+                    var getNodeDieDai = getChildNodeIdArr(node.nodes[x]);
+                    for (j in getNodeDieDai) {
+                        ts.push(getNodeDieDai[j]);
+                    }
+                }
+            }
+        } else {
+            ts.push(node.nodeId);
+        }
+        return ts;
+    }
+
+    // TODO 获取祖先节点，为了子节点取消级联。但是子节点引发附节点后会不断循环调用 改变节点函数
+    function getAncestors(node) {
+        var ancestors = [], currentNode = null
+        var checkedTree = $('#tree').treeview('getChecked');
+        while (node.pid) {
+            // 如果使用es6以上，可以用find来替代
+            currentNode = checkedTree.filter(function (value) {
+                return node.pid === value.id
+            })[0]
+            if (currentNode) ancestors = ancestors.concat(currentNode)
+            node = currentNode || {}
+        }
+        return ancestors
+    }
+
+    function setParentNodeCheck(node) {
+        var parentNode = $("#tree").treeview("getNode", node.parentId);
+        if (parentNode.nodes) {
+            var checkedCount = 0;
+            for (x in parentNode.nodes) {
+                if (parentNode.nodes[x].state.checked) {
+                    checkedCount++;
+                } else {
+                    break;
+                }
+            }
+            if (checkedCount === parentNode.nodes.length) {
+                $("#tree").treeview("checkNode", parentNode.nodeId);
+                setParentNodeCheck(parentNode);
+            }
+        }
+    }
+
+    function search() {
+        var value = $('#keywordsDicArea').val()
+        $('#tree').treeview('search', [value, {ignoreCase: false, exactMatch: false}, ['name']]);
+    }
+
+    function bindMainMenu() {
+        $.ajax({
+            type: "POST",
+            url: "/dicWareclass/get_pid_list/",
+            data: {},
+            async: true,//true：异步；false：同步
+            success: function (msg) {
+
+                var obj = JSON.parse(msg);
+                $("#parentId").empty();
+                $("#parentId").select2({
+                    placeholder: "请选择",
+                    openOnEnter: false,
+                    data: obj
+                });
+                $("#parentId").val('').trigger('change');
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                alert(jqXHR.responseText);
+                //alert("AJAX返回出错，请与技术人员联系！");
+            }
+        });
+    }
+
+
+    {% ifequal purviewA "T" %}
+
+
+        function addSub() {
+            if (selectedNodes.length !== 1) {
+                myAlert('请选择一个父类')
+                return
+            }
+            $("#acShow").html("添加");
+            bindMainMenu();
+
+            $('#parent-form-item').show()
+            $("#formDicArea")[0].reset();
+            $("#id").val("");
+            $('#parentId').val(selectedNodes[0].id || '')
+            $('#partnerName').val(selectedNodes[0].name || '')
+
+            $("#modalDicArea").modal('show');
+        }
+
+        function addMain() {
+            $("#acShow").html("添加");
+            bindMainMenu();
+
+            $('#parent-form-item').hide()
+            $("#formDicArea")[0].reset();
+            $("#id").val("");
+            $('#parentId').val('')
+            $("#modalDicArea").modal('show');
+        }
+    {% endifequal %}
+
+    {% ifequal purviewE "T" %}
+        function edit() {
+            if (selectedNodes.length !== 1) {
+                myAlert('请选择节点')
+                return
+            }
+            $("#acShow").html("修改");
+            $('#parent-form-item').hide()
+            bindMainMenu();
+            $("#formDicArea")[0].reset();
+            $("#id").val(selectedNodes[0].id);
+            $('#parentId').val(selectedNodes[0].pid)
+            $('#name').val(selectedNodes[0].name || '')
+            $("#modalDicArea").modal('show');
+        }
+    {% endifequal %}
+
+    {% ifequal purviewD "T" %}
+        function remove() {
+            if (checkedList.length === 0) {
+                myAlert("请选择一条需要删除的记录！")
+                return;
+            }
+
+            var idsForDelete = checkedList.join(',')
+
+            //alert(idsForDelete)
+            var fontSize = 18;
+            var fontColor = "red";
+            var htmlStr = "确定删除所选记录吗？";
+            var alertStr = "<div style='text-align: center;font-weight: bold;font-size: " + fontSize + "px;color:" + fontColor + "'>" + htmlStr + "</div>"
+            bootbox.confirm({
+                title: "操作提示",
+                message: alertStr,
+                buttons: {
+                    confirm: {
+                        label: '确定',
+                        className: 'btn-primary'
+                    },
+                    cancel: {
+                        label: '取消',
+                        className: 'btn-default'
+                    }
+                },
+                callback: function (result) {
+                    if (result) {
+                        //alert('点击确认按钮了');
+                        progressStart("", "", "");
+                        $.ajax({
+                            type: "POST",
+                            url: "/dicWareclass/ajax_del_wareclass/",
+                            data: {idsForDelete: idsForDelete},
+                            async: true,//true：异步；false：同步
+                            success: function (returnObj) {
+                                progressEnd();
+                                if (returnObj == "T") {
+                                    // 删除成功了就把全局状态中的选中给去了
+                                    checkedList = []
+                                    $("#btnRemove").attr("disabled", "disabled");
+                                    initialTree()
+                                    myAlert('删除成功', "", "")
+                                } else {
+                                    myAlert('删除失败', "", "")
+                                }
+
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+                                progressEnd();
+                                alert(jqXHR.responseText);
+                                //alert("AJAX返回出错，请与技术人员联系！");
+                            }
+                        });
+                    } else {
+                        //alert('点击取消按钮了');
+                    }
+                }
+            })
+        }
+    {% endifequal %}
+
+    //展开全部
+    function open_all() {
+        $('#tree').treeview('expandAll', {levels: 2, silent: true});
+    }
+
+    //合并全部
+    function merge_all() {
+        $('#tree').treeview('collapseAll', {silent: true});
+    }
+
+    //设置当前用户的权限，如果没有权限，遇隐藏相应按钮
+    function setUserPurs() {
+
+        {% ifnotequal purviewA "T" %}
+            $("#btnAddSub").hide();
+            $("#btnAddMain").hide();
+        {% endifnotequal %}
+        {% ifnotequal purviewE "T" %}
+            $("#btnEdit").hide();
+        {% endifnotequal %}
+        {% ifnotequal purviewD "T" %}
+            $("#btnRemove").hide();
+        {% endifnotequal %}
+
+    }
+
+    setUserPurs();//设置权限
+
+</script>
+{% include 'common/foot.html' %}

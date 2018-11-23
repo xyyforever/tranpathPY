@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  	<meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <title>{{ sysTitle }}</title>
+{% include 'common/head.html' %}
+  	<script>
+      $(document).ready(function() {
+        App.init();
+        Plugins.init();
+        FormComponents.init()
+      });
+   	</script>
+    <script>
+    	$(function(){
+
+    	    //判断是否有此页面数据的查看权限
+            if ("{{ allowV }}" != "T"){
+                myAlertBack("您<span style='color:red'>没有权限</span>访问此页面！（{{ purCode }}）","","");
+            }
+
+
+            $("#formSyspara").validate({
+                debug:true, //调试模式，即使验证成功也不会跳转到目标页面
+                errorElement: 'label',
+                errorPlacement: function(error, element) {
+                    error.appendTo(element.parent());
+                },
+                rules:{     //配置验证规则，key就是被验证的dom对象，value就是调用验证的方法(也是json格式)
+                    paraType:{
+                        required:true  //必填。如果验证方法不需要参数，则配置为true
+                    },
+                    paraShow:{
+                        required:true  //必填。如果验证方法不需要参数，则配置为true
+                    },
+                    paraTag:{
+                        required:true  //必填。如果验证方法不需要参数，则配置为true
+                    },
+                    paraValue:{
+                        required:true  //必填。如果验证方法不需要参数，则配置为true
+                    }
+                },
+                messages:{
+                    paraType:{
+                        required:"请选择参数类型！"
+                    },
+                    paraShow:{
+                        required:"请输入参数名称！"
+                    },
+                    paraTag:{
+                        required:"请输入参数标志！"
+                    },
+                    paraValue:{
+                        required:"请输入参数值！"
+                    }
+                },
+                submitHandler: function(form) {//提交表单
+                    var jsonObj=form2JsonObj("formSyspara");
+                    //var jsonStr=form2JsonStr("formSyspara");
+                    //var jsonStr=encodeURIComponent(jsonStr);//中文编码转换
+                    //alert(jsonStr);
+                    //$("#nav-tabs li:eq(0) a").tab("show")
+                    //return;
+                    progressStart(".modal-content",20,-60)
+                    $.ajax({
+                        url: "/syspara/ajaxSaveSyspara/",
+                        type: "post",
+                        data: jsonObj,
+                        success: function (returnObj) {
+                            progressEnd();
+                            //alert("提交成功，返回结果:" + returnObj.result);
+                            if (returnObj.result == "T"){
+                                refreshTable("cusTableSyspara");
+                                $("#modalSyspara").modal('hide');
+                            }else{
+                                myAlert(returnObj.scription,"","")
+                            }
+                        },
+                        error:function(jqXHR, textStatus, errorThrown){
+                            progressEnd();
+                            alert(jqXHR.responseText);
+                            alert("AJAX返回出错，请与技术人员联系！");
+                        }
+                    });
+                }
+            });
+
+
+       	});
+    </script>
+  </head>
+  <body>
+{% include 'common/top.html' %}
+    <div id="container">
+{% include 'common/left.html' %}
+      <div id="content">
+
+
+     	<!--
+          	作者：2243788@qq.com
+          	时间：2018-06-28 11:53:49
+          	描述：添加修改菜单模态窗口
+          -->
+        <div class="modal fade" id="modalSyspara">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                  ×
+                </button>
+                <h4 class="modal-title">
+                  	<span id="acShow"></span>系统参数信息
+                </h4>
+              </div>
+              <form id="formSyspara" class="form-horizontal row-border" onsubmit="return false" action="">
+              	<div class="modal-body">
+              		<div class="tabbable tabbable-custom">
+                        <ul class="nav nav-tabs" id="nav-tabs">
+                          	<li class="active">
+                                <a href="#tab_1_1" data-toggle="tab">
+                                    基本信息
+                                </a>
+                          	</li>
+                            <!--
+                          	<li>
+                                <a href="#tab_1_2" data-toggle="tab">
+                                    访问菜单
+                                </a>
+                          	</li>
+                          	<li>
+                                <a href="#tab_1_3" data-toggle="tab">
+                                    相关权限
+                                </a>
+                          	</li>
+                          	-->
+                        </ul>
+                        <div class="tab-content" id="tab-content">
+                          	<div class="tab-pane active" id="tab_1_1">
+                          		<div style="padding-right: 5px;">
+                                <!--字段开始-->
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        <font color='red'>*</font>参数类型 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <select id='paraType' name='paraType' class='form-control input-width-large'></select>
+                                        </div>
+                                    </div>
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        <font color='red'>*</font>参数名称 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <input type='text' id='paraShow' name='paraShow' class='form-control input-width-large'>
+                                        </div>
+                                    </div>
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        <font color='red'>*</font>参数标志 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <input type='text' id='paraTag' name='paraTag' class='form-control input-width-large'>
+                                        </div>
+                                    </div>
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        <font color='red'>*</font>参数值 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <input type='text' id='paraValue' name='paraValue' class='form-control input-width-large'>
+                                        </div>
+                                    </div>
+                                    <div class='form-group'>
+                                        <label class='col-md-3 control-label'>
+                                        备注 ：
+                                        </label>
+                                        <div class='col-md-9'>
+                                            <textarea id='memo' name='memo' rows=5 class='form-control input-width-large'></textarea>
+                                        </div>
+                                    </div>
+                                <!--字段结束-->
+
+                                </div>
+                          	</div>
+                            <!--
+                          	<div class="tab-pane" id="tab_1_2">
+
+                          	</div>
+                          	<div class="tab-pane" id="tab_1_3">
+
+                          	</div>
+                          	-->
+                        </div>
+                    </div>
+              	</div>
+             	<div class="modal-footer">
+             		<div id="tip">
+
+             		</div>
+	              	<input type="hidden" id="id" name="id" value="">
+	                <button type="button" class="btn btn-default" data-dismiss="modal">
+	                  	关闭
+	                </button>
+	                <button type="submit" id="submitForm" class="btn btn-primary">
+	                  	提交
+	                </button>
+              	</div>
+            </div>
+            </form>
+          </div>
+        </div>
+		<!--
+        	作者：2243788@qq.com
+        	时间：2018-06-28 11:53:49
+        	描述：添加修改菜单模态窗口--结束
+        -->
+
+        <div class="container">
+  <div class="crumbs">
+    <ul id="breadcrumbs" class="breadcrumb">
+      <li>
+        <i class="icon-home">
+        </i>
+        {{ pageInfo.menuMainName }}
+      </li>
+      <li class="current">
+         {{ pageInfo.menuSubName }}
+      </li>
+    </ul>
+    <!--
+    <ul class="crumb-buttons">
+      <li>
+        <a href="charts.html" title="">
+          <i class="icon-signal">
+          </i>
+          <span>
+            统计
+          </span>
+        </a>
+      </li>
+      <li class="dropdown">
+        <a href="#" title="" data-toggle="dropdown">
+          <i class="icon-tasks">
+          </i>
+          <span>
+            用户
+            <strong>
+              (+3)
+            </strong>
+          </span>
+          <i class="icon-angle-down left-padding">
+          </i>
+        </a>
+        <ul class="dropdown-menu pull-right">
+          <li>
+            <a href="form_components.html" title="">
+              <i class="icon-plus">
+              </i>
+              添加新用户
+            </a>
+          </li>
+          <li>
+            <a href="http://envato.stammtec.de/themeforest/melon/tables_dynamic.html"
+            title="">
+              <i class="icon-reorder">
+              </i>
+              查看
+            </a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+    -->
+  </div>
+          <div class="row" style="padding-top: 10px;">
+            <div class="col-md-12">
+              <div class="widget box">
+                <div class="widget-header">
+                  <h4>
+                    <i class="icon-reorder">
+                    </i>
+					{{ pageInfo.menuSubName }}
+                  </h4>
+                  <div class="toolbar no-padding">
+                    <div class="btn-group">
+
+	                  	<button id="btnMoveUp" class="btn btn-xs">
+		                    <i class="icon-arrow-up">
+		                    </i>
+							上移
+	                  	</button>
+	                  	<button id="btnMoveDown" class="btn btn-xs">
+		                    <i class="icon-arrow-down">
+		                    </i>
+							下移
+	                  	</button>
+
+	                  <button id="btnAdd" class="btn btn-xs btn-success">
+	                    <i class="icon-plus">
+	                    </i>
+						添加
+	                  </button>
+	                  <button id="btnEdit" class="btn btn-xs btn-info">
+	                    <i class="icon-edit">
+	                    </i>
+						修改
+	                  </button>
+	                  <button id="btnRemove" class="btn btn-xs btn-danger">
+	                    <i class="icon-remove">
+	                    </i>
+						删除
+	                  </button>
+	                </div>
+	              </div>
+                  <!--展开收缩按钮
+                  <div class="toolbar no-padding">
+                    <div class="btn-group">
+                      <span class="btn btn-xs widget-collapse">
+                        <i class="icon-angle-down">
+                        </i>
+                      </span>
+                    </div>
+                  </div>
+                  -->
+                </div>
+                <div class="widget-content" id="contentMain" style="height:580px;overflow: auto;">
+                    <div id="toolbarSearchSyspara">
+                		<!--
+						<div class="btn-group">
+				            <button id="btnAdd" type="button" class="btn btn-default">
+				                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>添加
+				            </button>
+				            <button id="btnDel" type="button" class="btn btn-danger">
+				                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>删除
+				            </button>
+			           	</div>
+			           	-->
+			           	<div class="pull-right" style='margin-left: 10px;'>
+			           		<button class="btn btn-default" id="btnSearchSyspara" style="margin-bottom:3px">查询</button>
+			           	</div>
+			           	<!--
+			           	<div class="pull-right" style='margin-left: 10px;'>
+			           		<select id="rsvStatus" name="rsvStatus" onchange="search()" class="form-control">
+								<option value="all" >不限</option>
+								<option value="1" >已收货</option>
+								<option value="0" selected>未收货</option>
+							</select>
+			           	</div>
+			           	-->
+			           	<div class="pull-right">
+			           		<input type="text" id="keywords" name="keywords" class="form-control" onkeydown="" placeholder="查询关键字"/>
+			           	</div>
+			       	</div>
+                    <table class="table table-hover"
+                            id="cusTableSyspara"
+                            data-pagination="true"
+                            data-show-refresh="true"
+                            data-show-toggle="true"
+                            data-showColumns="true">
+                        <thead>
+                          <tr>
+                              <th data-field="id">
+
+                              </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+<script>
+
+    $(function(){
+
+        initTableSyspara()
+
+        $("#btnSearchSyspara").bind("click",initTableSyspara)
+
+
+        $("#btnMoveUp").bind("click",moveUp);
+        $("#btnMoveDown").bind("click",moveDown);
+
+
+        {% ifequal purviewA "T" %}
+        $("#btnAdd").bind("click",add);
+        {% endifequal %}
+        {% ifequal purviewE "T" %}
+        $("#btnEdit").bind("click",edit);
+        {% endifequal %}
+        {% ifequal purviewD "T" %}
+        $("#btnRemove").bind("click",remove);
+        {% endifequal %}
+
+        $("#paraType").select2({
+	placeholder:"请选择",
+	openOnEnter:false,
+	minimumResultsForSearch: -1,
+	data:[{"id": "系统", "text": "系统"}, {"id": "商家", "text": "商家"}]
+});
+$("#paraType").val('').trigger('change');
+
+
+
+    })
+
+
+
+{% ifequal purviewA "T" %}
+function add(){
+	$("#acShow").html("添加")
+	$("#formSyspara")[0].reset();
+	$("#id").val("");
+	//将选择卡tab选择到一个
+    setTabDefault("nav-tabs","tab-content",0);
+	$("#modalSyspara").modal('show');
+	$("#paraType").val('').select2({minimumResultsForSearch: -1});
+}
+{% endifequal %}
+
+{% ifequal purviewE "T" %}
+function edit(){
+	$("#acShow").html("修改")
+    records=$('#cusTableSyspara').bootstrapTable("getAllSelections");
+	if (records.length!=1){
+	    myAlert("请选择一条需要修改的记录！（当前选择 "+records.length+" 条）")
+        return;
+    }
+	var record=records[0];
+	var jsonStr=JSON.stringify(record);
+	$("#formSyspara").setForm(jsonStr);
+	//将选择卡tab选择到一个
+    setTabDefault("nav-tabs","tab-content",0);
+    $("#modalSyspara").modal('show');
+	$("#paraType").val(record.paraType).select2({minimumResultsForSearch: -1});
+}
+{% endifequal %}
+
+{% ifequal purviewD "T" %}
+function remove(){
+	//alert($('#menuEditTree').treeview('getSelected', 0).length)
+	//alert($('#menuEditTree').treeview('getChecked', null)[0].id);
+	records=$('#cusTableSyspara').bootstrapTable("getAllSelections");
+	if (records.length==0){
+	    myAlert("请选择一条需要删除的记录！")
+        return;
+    }
+	var idsForDelete=""
+	for (var i=0;i<records.length;i++){
+		//alert(objArray[i].name)
+		if (idsForDelete==""){
+			idsForDelete=records[i].id
+		}else{
+			idsForDelete=idsForDelete+","+records[i].id
+		}
+	}
+	//alert(idsForDelete)
+	var fontSize=18;
+	var fontColor="red";
+	var htmlStr="确定删除所选记录吗？"
+	var alertStr="<div style='text-align: center;font-weight: bold;font-size: "+fontSize+"px;color:"+fontColor+"'>"+htmlStr+"</div>"
+	bootbox.confirm({
+	  	title: "操作提示",
+	  	message: alertStr,
+	  	buttons: {
+            confirm:{
+                label: '确定',
+                className: 'btn-primary'
+            },
+            cancel: {
+                label: '取消',
+                className: 'btn-default'
+            }
+        },
+	  	callback: function(result) {
+            if(result) {
+                //alert('点击确认按钮了');
+                progressStart("","","");
+				$.ajax({
+					type: "POST",
+					url: "/syspara/ajaxDelSyspara/",
+					data: {idsForDelete:idsForDelete},
+					async: false,//true：异步；false：同步
+					success: function(returnObj){
+						progressEnd();
+						//console.log(msg)
+                        if (returnObj.result == "T"){
+                            refreshTable("cusTableSyspara");
+                        }else{
+
+                        }
+                        myAlert(returnObj.scription,"","")
+					},
+					error: function (jqXHR, textStatus, errorThrown) {
+						progressEnd();
+						alert(jqXHR.responseText);
+						//alert("AJAX返回出错，请与技术人员联系！");
+					}
+				});
+            } else {
+                //alert('点击取消按钮了');
+            }
+        }
+	})
+}
+{% endifequal %}
+
+
+//上移
+function moveUp(){
+
+	var moveType="up";
+	moveSort(moveType);
+}
+
+//下移
+function moveDown(){
+	var moveType="down";
+	moveSort(moveType);
+}
+
+//移动排序
+function moveSort(moveType){
+	records=$('#cusTableSyspara').bootstrapTable("getAllSelections");
+	if (records.length!=1){
+	    myAlert("请选择一条需要移动的记录！（当前选择 "+records.length+" 条）")
+        return;
+    }
+    var id = records[0].id
+	$.ajax({
+		type: "POST",
+		url: "/syspara/moveSortsSyspara/",
+		data: {id:id,moveType:moveType},
+		async: false,//true：异步；false：同步
+		success: function(returnObj){
+		    if (returnObj.result == "T"){
+                refreshTable("cusTableSyspara");
+            }else{
+
+            }
+            myAlert(returnObj.scription,"","")
+		},
+		error: function (jqXHR, textStatus, errorThrown) {
+			alert(jqXHR.responseText);
+			//alert("AJAX返回出错，请与技术人员联系！");
+		}
+	});
+}
+
+
+/*
+ *
+ */
+function initTableSyspara(){
+	var tableId="cusTableSyspara"
+	//alert("ABC")
+	//先销毁表格
+	$('#'+tableId).bootstrapTable('destroy');
+	//初始化表格,动态从服务器加载数据
+	$("#"+tableId).bootstrapTable({
+	    method: "get",  //使用get请求到服务器获取数据
+	    toolbar:"#toolbarSearchSyspara",
+	    url: "/syspara/gridDataSyspara", //获取数据的Servlet地址
+	    detailView: false,//父子表
+	    striped: true,  //表格显示条纹
+	    singleSelect:false,//设置True 将禁止多选
+	    clickToSelect:true,
+	    pagination: true, //启动分页
+	    pageSize: 15,  //每页显示的记录数
+	    pageNumber:1, //当前第几页
+	    pageList: [5, 10, 15, 20, 25],  //记录数可选列表
+	    sortable:true,	//是否启用排序
+	    sortName :"id",
+	    sortOrder: "desc",//排序方式
+	    search: false,  //是否启用查询
+	    searchOnEnterKey:true,//设置为 true时，按回车触发搜索方法，否则自动触发搜索方法
+	    searchAlign:"right",
+	    showColumns: true,  //显示下拉框勾选要显示的列
+	    showRefresh: true,  //显示刷新按钮
+	    sidePagination: "server", //表示服务端请求
+	    columns:[
+                {
+                    field : 'checked',
+                    checkbox : true,
+                    formatter : function(value,row,index){
+
+                    }//,
+                    /*
+                    footerFormatter: function (value) {
+                        var count = 0;
+                        for (var i in value) {
+                        count += parseInt(value[i].amount);
+                    }
+                        return count;
+                    }
+                    */
+                },
+                {
+                    title: '参数类型',
+                    field: 'paraType',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '参数名称',
+                    field: 'paraShow',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '参数标志',
+                    field: 'paraTag',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '参数值',
+                    field: 'paraValue',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '备注',
+                    field: 'memo',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                }
+	    ],
+	    //设置为undefined可以获取pageNumber，pageSize，searchText，sortName，sortOrder
+	    //设置为limit可以获取limit, offset, search, sort, order
+	    queryParamsType : "undefined",
+	    queryParams: function queryParams(params) {   //设置查询参数
+		    var keywords=$("#keywords").val();
+	      	var param = {
+		  		pageIndex: params.pageNumber,
+		  		pageSize: params.pageSize,
+		  		keywords:keywords,
+		  		sortName:params.sortName,
+			  	sortOrder:params.sortOrder
+	      	};
+	      	return param;
+	    },
+	    onLoadSuccess: function(data){  //加载成功时执行
+	      	//layer.msg("加载成功");
+	      	//alert("加载成功")
+	      	//alert(data.rows[0].expressSendNum)
+            tableLoaded(data);
+	    },
+	    onLoadError: function(status){  //加载失败时执行
+	      	//layer.msg("加载数据失败", {time : 1500, icon : 2});
+	      	//alert("加载数据失败")
+	    },
+	    onPageChange:function(number,size){
+	    	//alert(pageNumber)
+	    },
+	    onCheck:function(row){
+	    		//alert(row.id);
+	    		//setBtnStatus();
+	    },
+	    onUncheck:function(row){
+	    		//alert(row.id);
+	    		//setBtnStatus();
+	    },
+	    	onCheckAll:function(rows){
+	    		//alert(rows.length);
+	    		//setBtnStatus();
+	    },
+	    onUncheckAll:function(rows){
+	    		//alert(rows.length);
+	    		//setBtnStatus();
+	    },
+	   	onColumnSwitch:function(field, checked){
+			if (!checked){//设置cookie
+				setTableColumnForHide(tableId,field);
+			}else{
+				setTableColumnForHideCancel(tableId,field);
+			}
+	    },
+            //注册加载子表的事件。注意下这里的三个参数！
+            onExpandRow: function (index, row, $detail) {
+                //InitSubTable(index, row, $detail);
+            }
+	});
+}
+
+//设置当前用户的权限，如果没有权限，遇隐藏相应按钮
+function setUserPurs(){
+
+    {% ifnotequal purviewA "T" %}
+    $("#btnAdd").hide();
+    {% endifnotequal %}
+    {% ifnotequal purviewE "T" %}
+    $("#btnEdit").hide();
+    {% endifnotequal %}
+    {% ifnotequal purviewD "T" %}
+    $("#btnRemove").hide();
+    {% endifnotequal %}
+
+}
+setUserPurs();//设置权限
+
+</script>
+{% include 'common/foot.html' %}

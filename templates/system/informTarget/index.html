@@ -1,0 +1,605 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  	<meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <title>{{ sysTitle }}</title>
+{% include 'common/head.html' %}
+  	<script>
+      $(document).ready(function() {
+        App.init();
+        Plugins.init();
+        FormComponents.init()
+      });
+   	</script>
+    <script>
+    	$(function(){
+    	    
+    	    //判断是否有此页面数据的查看权限
+            if ("{{ allowV }}" != "T"){
+                myAlertBack("您<span style='color:red'>没有权限</span>访问此页面！（{{ purCode }}）","","");
+            }
+
+//让当前表单调用validate方法，实现表单验证功能
+            $("#formAdd").validate({
+                debug:true, //调试模式，即使验证成功也不会跳转到目标页面
+                errorElement: 'label',
+			   	errorPlacement: function(error, element) {
+			    	error.appendTo(element.parent());
+			   	},
+                rules:{     //配置验证规则，key就是被验证的dom对象，value就是调用验证的方法(也是json格式)
+//                  name:{
+//                      required:true  //必填。如果验证方法不需要参数，则配置为true
+//                  },
+//                  informTag:{
+//                      required:true  //必填。如果验证方法不需要参数，则配置为true
+//                  }
+                },
+                messages:{
+//                  name:{
+//                      required:"请输入通知消息名称！"
+//                  },
+//                  informTag:{
+//                      required:"请输入通知消息标志！"
+//                  }
+				},
+				submitHandler: function(form) {//提交表单
+					//alert(form.name.value)
+					var jsonObj=form2JsonObj("formAdd");
+					jsonObj["departmentCount"]="{{ departmentList|length }}";
+                    //$.cookie('username', jsonObj.username);
+                    //var jsonStr=form2JsonStr("formAdd");
+                    //var jsonStr=encodeURIComponent(jsonStr);//中文编码转换
+                    //alert(jsonStr);
+                    //return;
+                    progressStart(".modal-content",20,-60);
+                    $.ajax({
+						url: "/informType/setInformTarget/",
+                        type: "post",
+                        data: jsonObj,
+						success: function (returnObj) {
+							progressEnd();
+                            //alert("提交成功，返回结果:" + returnObj.result);
+                            if (returnObj.result == "T"){
+                                refreshTable("cusTableInformType");
+                                $("#modalAdd").modal('hide');
+                            }else{
+                                myAlert(returnObj.scription,"","")
+                            }
+						},
+						error:function(jqXHR, textStatus, errorThrown){
+							progressEnd();
+							alert(jqXHR.responseText);
+							alert("AJAX返回出错，请与技术人员联系！");
+						}
+					});
+				}
+            });
+
+       	});
+    </script>
+  </head>
+  <body>
+{% include 'common/top.html' %}
+    <div id="container">
+{% include 'common/left.html' %}
+      <div id="content">
+
+
+      	<!--
+          	作者：2243788@qq.com
+          	时间：2017-10-10
+          	描述：添加修改菜单模态窗口
+          -->
+        <div class="modal fade" id="modalAdd">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                  &times;
+                </button>
+                <h4 class="modal-title">
+                  	<span id="acShow"></span>设置发送对象
+                </h4>
+                <h5>
+                  	<span id="nameShow">aded</span>
+                </h5>
+              </div>
+              <form id="formAdd" class="form-horizontal row-border" onsubmit="return false" action="">
+              <div class="modal-body">
+              	<div style="padding-right: 5px;">
+                    <div class="form-group">
+                      <label class="col-md-3 control-label">
+                        	系统用户对象：
+                      </label>
+                      <div class="col-md-9">
+                        	<select id="targetUserList" name="targetUserList" class="form-control input-width-xxlarge">
+			                </select>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      	<label class="col-md-3 control-label">
+                        	部门对象：
+                      	</label>
+                      	<div class="col-md-9">
+                            {% for department in departmentList %}
+							<div style="width: 500px;height: 70px;padding-top: 5px;margin-top: 5px;">
+	                      		<label style="float: left;margin-top: 9px;margin-right: 5px;width: 100px;">
+		                          	<input type="checkbox" id="dept{{ department.recordSn }}" name="dept{{ department.recordSn }}" value="{{ department.text }}" onclick="javascript:setSelect('{{ department.recordSn }}')">
+		                          	{{ department.text }}
+		                        </label>
+	                      		<div>
+	                      			<select id="position{{ department.recordSn }}" name="position{{ department.recordSn }}" multiple="multiple" class="form-control" style="width: 350px;" disabled="true">
+				                	</select>
+	                      		</div>
+	                      	</div>
+                            {% endfor %}
+                      	</div>
+                    </div>
+	            </div>
+              </div>
+              <div class="modal-footer">
+              	<input type="hidden" id="informTypeId" name="informTypeId" value="0">
+                <button type="button" class="btn btn-default" data-dismiss="modal">
+                  	关闭
+                </button>
+                <button type="submit" id="btnSubmit" class="btn btn-primary">
+                  	提交
+                </button>
+              </div>
+            </form>
+            </div>
+          </div>
+        </div>
+		<!--
+        	作者：2243788@qq.com
+        	时间：2017-10-10
+        	描述：添加修改菜单模态窗口--结束
+        -->
+
+
+        <div class="container">
+  <div class="crumbs">
+    <ul id="breadcrumbs" class="breadcrumb">
+      <li>
+        <i class="icon-home">
+        </i>
+        {{ pageInfo.menuMainName }}
+      </li>
+      <li class="current">
+         {{ pageInfo.menuSubName }}
+      </li>
+    </ul>
+    <!--
+    <ul class="crumb-buttons">
+      <li>
+        <a href="charts.html" title="">
+          <i class="icon-signal">
+          </i>
+          <span>
+            统计
+          </span>
+        </a>
+      </li>
+      <li class="dropdown">
+        <a href="#" title="" data-toggle="dropdown">
+          <i class="icon-tasks">
+          </i>
+          <span>
+            用户
+            <strong>
+              (+3)
+            </strong>
+          </span>
+          <i class="icon-angle-down left-padding">
+          </i>
+        </a>
+        <ul class="dropdown-menu pull-right">
+          <li>
+            <a href="form_components.html" title="">
+              <i class="icon-plus">
+              </i>
+              添加新用户
+            </a>
+          </li>
+          <li>
+            <a href="http://envato.stammtec.de/themeforest/melon/tables_dynamic.html"
+            title="">
+              <i class="icon-reorder">
+              </i>
+              查看
+            </a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+    -->
+  </div>
+          <div class="row" style="padding-top: 10px;">
+            <div class="col-md-12">
+              <div class="widget box">
+                <div class="widget-header">
+                  <h4>
+                    <i class="icon-reorder">
+                    </i>
+					{{ pageInfo.menuSubName }}
+                  </h4>
+                  <div class="toolbar no-padding">
+                      <!--
+                    <div class="btn-group">
+	                  <button id="btnAdd" class="btn btn-xs btn-success">
+	                    <i class="icon-plus">
+	                    </i>
+						添加
+	                  </button>
+	                  <button id="btnEdit" class="btn btn-xs btn-info">
+	                    <i class="icon-edit">
+	                    </i>
+						修改
+	                  </button>
+	                  <button id="btnRemove" class="btn btn-xs btn-danger">
+	                    <i class="icon-remove">
+	                    </i>
+						删除
+	                  </button>
+	                </div>
+	                    -->
+	              </div>
+                  <!--展开收缩按钮
+                  <div class="toolbar no-padding">
+                    <div class="btn-group">
+                      <span class="btn btn-xs widget-collapse">
+                        <i class="icon-angle-down">
+                        </i>
+                      </span>
+                    </div>
+                  </div>
+                  -->
+                </div>
+                <div class="widget-content" id="contentMain" style="height:580px;overflow: auto;">
+                    <div id="toolbarSearchInformType">
+                		<!--
+						<div class="btn-group">
+				            <button id="btnAdd" type="button" class="btn btn-default">
+				                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>添加
+				            </button>
+				            <button id="btnDel" type="button" class="btn btn-danger">
+				                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>删除
+				            </button>
+			           	</div>
+			           	-->
+			           	<div class="pull-right" style='margin-left: 10px;'>
+			           		<button class="btn btn-default" id="btnSearchInformType" type="button" style="margin-bottom:3px">查询</button>
+			           	</div>
+			           	<!--
+			           	<div class="pull-right" style='margin-left: 10px;'>
+			           		<select id="rsvStatus" name="rsvStatus" onchange="search()" class="form-control">
+								<option value="all" >不限</option>
+								<option value="1" >已收货</option>
+								<option value="0" selected>未收货</option>
+							</select>
+			           	</div>
+			           	-->
+			           	<div class="pull-right">
+			           		<input type="text" id="keywordsInformType" name="keywordsInformType" class="form-control" onkeydown="" placeholder="查询关键字"/>
+			           	</div>
+			       	</div>
+                    <table class="table table-hover"
+                            id="cusTableInformType"
+                            data-pagination="true"
+                            data-show-refresh="true"
+                            data-show-toggle="true"
+                            data-showColumns="true">
+                        <thead>
+                          <tr>
+                              <th data-field="id">
+
+                              </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+<script>
+
+    var userData = {{ userJson|safe }}
+    var positionData = {{ positionJson|safe }}
+    $(function(){
+
+        initTableInformType()
+
+        $("#btnSearchInformType").bind("click",initTableInformType)
+
+        $("#targetUserList").select2({
+            placeholder:"请选择",
+            openOnEnter:false,
+            //minimumResultsForSearch: -1,
+            multiple: true,
+            data:userData
+        });
+
+        {% for department in departmentList %}
+            $("#position{{ department.recordSn }}").select2({
+                placeholder:"不选择职位，则表示部门中所有人",
+                //openOnEnter:false,
+                //closeOnSelect:false,
+                //minimumResultsForSearch: -1,
+                //multiple: true,
+                data:positionData
+            });
+        {% endfor %}
+
+
+    })
+
+
+
+{% ifequal allowV "T" %}
+//设置发送对象
+function setSendObj(informTypeId,informName,informTag,targetUserList,targetDeptList){
+	//alert(informTypeId)
+    targetUserList = unescape(targetUserList)
+    targetDeptList = unescape(targetDeptList)
+	//console.log(targetUserList)
+	//console.log(targetDeptList)
+	$("#acShow").html("");
+	$("#nameShow").html(informName+"（"+informTag+"）");
+	$("#informTypeId").val(informTypeId);
+	$("#targetUserList").val(targetUserList.split(",")).select2();
+
+	//重置部门职位数据
+    var deptObjList=$("input[name^='dept']");
+    var positionObjList=$("select[name^='position']");
+    for (j=0;j<deptObjList.length;j++){
+        deptObjList[j].checked=false;//设置部门打勾
+        $("#position"+j).val("").select2({placeholder:"不选择职位，则表示部门中所有人"});
+		positionObjList[j].disabled=true;//设置职位选择可用
+
+    }
+
+	if (targetDeptList!=""){
+		var deptObjList=$("input[name^='dept']");
+		//console.log("deptObjList.length:"+deptObjList.length)
+		var positionObjList=$("select[name^='position']");
+		//console.log("positionObjList.length:"+positionObjList.length)
+		tempArray1=targetDeptList.split("|")
+		for (i=0;i<tempArray1.length;i++){
+			tempArray2=tempArray1[i].split(":");
+			deptName=tempArray2[0];//部门名称
+			positionlist=tempArray2[1];//部门相关职位
+            //console.log(deptName)
+            sn = $("input[value='"+deptName+"']").get(0).id.replace("dept","")
+            $("input[value='"+deptName+"']").get(0).checked=true;//设置部门打勾
+            $("#position" + sn).get(0).disabled=false;//设置职位选择可用
+            if (positionlist!="") {//设置职位默认值
+                $("#position" + sn).val(positionlist.split(",")).select2({placeholder:"不选择职位，则表示部门中所有人"});
+            }
+		}
+	}
+	$("#modalAdd").modal('show');
+}
+{% endifequal %}
+
+function setSelect(i){
+	if (document.getElementById("dept"+i).checked){
+		$("#position"+i).attr("disabled",false);
+	}else{
+		$("#position"+i).attr("disabled",true);
+	}
+}
+
+
+/*
+ *
+ */
+function initTableInformType(){
+	var tableId="cusTableInformType"
+	//alert("ABC")
+	//先销毁表格
+	$('#'+tableId).bootstrapTable('destroy');
+	//初始化表格,动态从服务器加载数据
+	$("#"+tableId).bootstrapTable({
+	    method: "get",  //使用get请求到服务器获取数据
+	    toolbar:"#toolbarSearchInformType",
+	    url: "/informType/gridDataInformType/", //获取数据的Servlet地址
+	    detailView: false,//父子表
+	    striped: true,  //表格显示条纹
+	    singleSelect:false,//设置True 将禁止多选
+	    clickToSelect:true,
+	    pagination: true, //启动分页
+	    pageSize: 15,  //每页显示的记录数
+	    pageNumber:1, //当前第几页
+	    pageList: [10, 15, 20, 25,50],  //记录数可选列表
+	    sortable:true,	//是否启用排序
+                    
+	    sortName :"id",
+	    sortOrder: "desc",//排序方式
+                    
+	    search: false,  //是否启用查询
+	    searchOnEnterKey:true,//设置为 true时，按回车触发搜索方法，否则自动触发搜索方法
+	    searchAlign:"right",
+	    showColumns: true,  //显示下拉框勾选要显示的列
+	    showRefresh: true,  //显示刷新按钮
+	    sidePagination: "server", //表示服务端请求
+	    columns:[
+                //{
+                //    field : 'checked',
+                //    checkbox : true,
+                //    formatter : function(value,row,index){
+
+                //    }//,
+                    /*
+                    footerFormatter: function (value) {
+                        var count = 0;
+                        for (var i in value) {
+                        count += parseInt(value[i].amount);
+                    }
+                        return count;
+                    }
+                    */
+                //},
+                {
+                    title: '消息名称',
+                    field: 'informName',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '消息标志',
+                    field: 'informTag',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '大致内容',
+                    field: 'informInfo',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '触发条件说明',
+                    field: 'condition',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '触发代码位置',
+                    field: 'codePosition',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '参数说明',
+                    field: 'paramMemo',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '备注',
+                    field: 'memo',
+                    sortable: true,
+                    align: 'center',
+                    valign: 'middle'
+                },
+                {
+                    title: '操作',
+                    field: 'operate',
+                    align: 'center',
+                    valign: 'middle',
+                    formatter : function(value,row,index){
+                        var tipStr = "<font color=yellow>系统用户对象：</font>";
+                        targetUserNameList = row.targetUserNameList;
+                        if (targetUserNameList==""){
+                            tipStr = tipStr+"无";
+                        }else{
+                            tipStr = tipStr+targetUserNameList;
+                        }
+                        tipStr =tipStr + "<br><font color=yellow>部门对象：</font>";
+                        targetDeptList = row.targetDeptList;
+                        if (targetDeptList==""){
+                            tipStr = tipStr+"无";
+                        }else{
+                            tempArray = targetDeptList.split("|")
+                            for (i=0;i<tempArray.length;i++){
+                                tempArray1 = tempArray[i].split(":");
+                                deptName = tempArray1[0];
+                                positionList = tempArray1[1];
+                                if (positionList == ""){
+                                    positionList = "所有人"
+                                }
+                                tipStr = tipStr+"<br><font color=pink>"+deptName+"</font>："+positionList;
+                            }
+
+                        }
+                        {% ifequal allowV "T" %}
+                        return "<a href='javascript:void(0)' class='bs-tooltip' data-html='true' data-original-title='"+tipStr+"' onclick=javascript:setSendObj('"+row.id+"','"+row.informName+"','"+row.informTag+"','"+escape(row.targetUserList)+"','"+escape(row.targetDeptList)+"')>设置发送对象</a>"
+                        {% else %}
+                            tipStr = tipStr + "<br><font color=red><b>无权限设置</b></font>"
+                        return "<href='javascript:void(0)' class='bs-tooltip' data-html='true' data-original-title='"+tipStr+"'>设置发送对象</a>"
+                        {% endifequal %}
+                    }
+                }
+
+	    ],
+	    //设置为undefined可以获取pageNumber，pageSize，searchText，sortName，sortOrder
+	    //设置为limit可以获取limit, offset, search, sort, order
+	    queryParamsType : "undefined",
+	    queryParams: function queryParams(params) {   //设置查询参数
+		    var keywords=$("#keywordsInformType").val();
+	      	var param = {
+		  		pageIndex: params.pageNumber,
+		  		pageSize: params.pageSize,
+		  		keywords:keywords,
+		  		sortName:params.sortName,
+			  	sortOrder:params.sortOrder
+	      	};
+	      	return param;
+	    },
+	    onLoadSuccess: function(data){  //加载成功时执行
+	      	//layer.msg("加载成功");
+	      	//alert("加载成功")
+	      	//alert(data.rows[0].expressSendNum)
+            tableLoaded(data);
+            Plugins.init();
+	    },
+	    onLoadError: function(status){  //加载失败时执行
+	      	//layer.msg("加载数据失败", {time : 1500, icon : 2});
+	      	//alert("加载数据失败")
+	    },
+	    onPageChange:function(number,size){
+	    	//alert(pageNumber)
+	    },
+	    onCheck:function(row){
+	    		//alert(row.id);
+	    		//setBtnStatus();
+	    },
+	    onUncheck:function(row){
+	    		//alert(row.id);
+	    		//setBtnStatus();
+	    },
+	    	onCheckAll:function(rows){
+	    		//alert(rows.length);
+	    		//setBtnStatus();
+	    },
+	    onUncheckAll:function(rows){
+	    		//alert(rows.length);
+	    		//setBtnStatus();
+	    },
+	   	onColumnSwitch:function(field, checked){
+			if (!checked){//设置cookie
+				setTableColumnForHide(tableId,field);
+			}else{
+				setTableColumnForHideCancel(tableId,field);
+			}
+	    },
+            //注册加载子表的事件。注意下这里的三个参数！
+            onExpandRow: function (index, row, $detail) {
+                //InitSubTable(index, row, $detail);
+            }
+	});
+}
+
+
+</script>
+{% include 'common/foot.html' %}
+
+
+
+

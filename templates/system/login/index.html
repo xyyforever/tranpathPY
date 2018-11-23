@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">  
+  <head>
+  	<meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <title>{{ sysTitle }}</title>
+{% include 'common/head.html' %}
+  	<script>
+      $(document).ready(function() {
+        App.init();
+        Plugins.init();
+        FormComponents.init()
+      });
+   	</script>
+    <script>
+    	$(function(){
+    	    
+       	});
+    </script>
+  </head>
+  <body>
+{% include 'common/top.html' %}
+    <div id="container">
+{% include 'common/left.html' %}
+      <div id="content">
+        <div class="container">
+  <div class="crumbs">
+    <ul id="breadcrumbs" class="breadcrumb">
+      <li>
+        <i class="icon-home">
+        </i>
+        首页
+      </li>
+    </ul>
+    <!--
+    <ul class="crumb-buttons">
+      <li>
+        <a href="charts.html" title="">
+          <i class="icon-signal">
+          </i>
+          <span>
+            统计
+          </span>
+        </a>
+      </li>
+      <li class="dropdown">
+        <a href="#" title="" data-toggle="dropdown">
+          <i class="icon-tasks">
+          </i>
+          <span>
+            用户
+            <strong>
+              (+3)
+            </strong>
+          </span>
+          <i class="icon-angle-down left-padding">
+          </i>
+        </a>
+        <ul class="dropdown-menu pull-right">
+          <li>
+            <a href="form_components.html" title="">
+              <i class="icon-plus">
+              </i>
+              添加新用户
+            </a>
+          </li>
+          <li>
+            <a href="http://envato.stammtec.de/themeforest/melon/tables_dynamic.html"
+            title="">
+              <i class="icon-reorder">
+              </i>
+              查看
+            </a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+    -->
+  </div>
+          <div class="row" style="padding-top: 10px;">
+            <div class="col-md-12">
+              <div class="widget box">
+                <div class="widget-header">
+                  <h4>
+                    <i class="icon-reorder">
+                    </i>
+					首页
+                  </h4>
+                  <div class="toolbar no-padding">
+                    <div class="btn-group">
+
+
+	                </div>
+	              </div>
+                  <!--展开收缩按钮
+                  <div class="toolbar no-padding">
+                    <div class="btn-group">
+                      <span class="btn btn-xs widget-collapse">
+                        <i class="icon-angle-down">
+                        </i>
+                      </span>
+                    </div>
+                  </div>
+                  -->
+                </div>
+                <div class="widget-content" id="contentMain" style="height:580px;overflow: auto;">
+                    <div id="menuEditTree"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+<script>
+
+//设置当前用户的权限，如果没有权限，遇隐藏相应按钮
+function setUserPurs(){
+	
+}
+setUserPurs();//设置权限
+
+</script>
+{% include 'common/foot.html' %}

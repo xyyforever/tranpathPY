@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>excel预览和导入</title>
+    <link href="../../static/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+    <link href="../../static/assets/css/main.css" rel="stylesheet" type="text/css"/>
+    <link href="../../static/assets/css/plugins.css" rel="stylesheet" type="text/css"/>
+    <link href="../../static/assets/css/responsive.css" rel="stylesheet" type="text/css"/>
+    <link href="../../static/assets/css/icons.css" rel="stylesheet" type="text/css"/>
+    <link href="../../static/assets/css/login.css" rel="stylesheet" type="text/css"/>
+    <link rel="stylesheet" href="../../static/assets/css/fontawesome/font-awesome.min.css">
+    <!--[if IE 7]>
+      <link rel="stylesheet" href="../../static/assets/css/fontawesome/font-awesome-ie7.min.css">
+    <![endif]-->
+    <!--[if IE 8]>
+      <link href="../../static/assets/css/ie8.css" rel="stylesheet" type="text/css"/>
+    <![endif]-->
+    <link rel="stylesheet" type="text/css" href="../../static/bootstrap/css/fonts.css?family=Open+Sans:400,600,700">
+    <link rel="stylesheet" type="text/css" href="../../static/plugins/fileinput/fileinput.css"/>
+    <link rel="stylesheet" type="text/css" href="../../static/plugins/bootstrap-table/bootstrap-table.css"/>
+    <script type="text/javascript" src="../../static/assets/js/libs/jquery-1.10.2.min.js"></script>
+    <script type="text/javascript" src="../../static/bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../static/assets/js/libs/lodash.compat.min.js"></script>
+    <!--[if lt IE 9]>
+      <script src="../../static/assets/js/libs/html5shiv.js"></script>
+    <![endif]-->
+    <script type="text/javascript" src="../../static/plugins/uniform/jquery.uniform.min.js"></script>
+    <script type="text/javascript" src="../../static/plugins/validation/jquery.validate.min.js"></script>
+    <script type="text/javascript" src="../../static/plugins/nprogress/nprogress.js"></script>
+    <script type="text/javascript" src="../../static/assets/js/login.js"></script>
+    <script type="text/javascript" src="../../static/plugins/bootbox/bootbox.min.js"></script>
+    <script type="text/javascript" src="../../static/plugins/fileinput/fileinput.js"></script>
+    <script type="text/javascript" src="../../static/plugins/fileinput/zh.js"></script>
+    <script type="text/javascript" src="../../static/plugins/bootstrap-table/bootstrap-table.js" ></script>
+    <script type="text/javascript" src="../../static/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js" ></script>
+    <script type="text/javascript" src="../../static/js/myScripts.js"></script>
+	<script type="text/javascript" src="../../static/js/form2Json.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div style="text-align: center;font-size: 24px;padding: 10px">
+            {{ obj.filenameOriginal }}
+        </div>
+        <div>
+            <div id="toolbarForSearch">
+                    <div class="btn-group" style="margin-top: -3px;padding-right: 10px">
+                        <button id="btnImport" type="button" class="btn btn-default"
+                                {% ifnotequal obj.importTime None %}
+                                disabled
+                                {% endifnotequal %}
+                                >
+                            <span class="icon-plus" aria-hidden="true"></span> 导入{{ obj.tableName }}
+                        </button>
+{#                        <button id="btnDel" type="button" class="btn btn-danger">#}
+{#                            <span class="icon-remove" aria-hidden="true"></span>删除#}
+{#                        </button>#}
+                    </div>
+                </div>
+                <table class="table table-hover"
+                        id="cusTableExcelFilePreview"
+                        data-pagination="true"
+                        data-show-refresh="true"
+                        data-show-toggle="true"
+                        data-showColumns="true">
+                    <thead>
+                      <tr>
+                          <th data-field="id">
+
+                          </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+        </div>
+    </div>
+</body>
+</html>
+<script>
+
+    $(function () {
+        initTable();
+
+        $("#btnImport").bind("click",improtExcel);
+    });
+
+    function improtExcel() {
+        if (confirm("确定导入数据吗？")){
+            //$("#btnImport").attr("disabled","disabled");
+            $.ajax({
+                url: "../../myTool/ajaxExcelImport/",
+                type: "post",
+                data: {id:{{obj.id}}},
+                success: function (text) {
+                    //alert("提交成功，返回结果:" + text);
+                    if (text == "T"){
+
+                    }else{
+                        alert(text)
+                    }
+                    location.reload()
+                },
+                error:function(jqXHR, textStatus, errorThrown){
+                    //$("#btnImport").removeAttrs("disabled");
+                    alert(jqXHR.responseText);
+                    alert("AJAX返回出错，请与技术人员联系！");
+                }
+            });
+        }
+    }
+
+    /*
+ *
+ */
+function initTable(){
+	var tableId="cusTableExcelFilePreview";
+	//alert("ABC")
+	//先销毁表格
+	$('#'+tableId).bootstrapTable('destroy');
+	//初始化表格,动态从服务器加载数据
+	$("#"+tableId).bootstrapTable({
+	    method: "get",  //使用get请求到服务器获取数据
+	    toolbar:"#toolbarForSearch",
+	    url: "../../myTool/griddata_excel_import_file_preview?id={{ obj.id }}", //获取数据的Servlet地址
+	    detailView: false,//父子表
+	    striped: true,  //表格显示条纹
+	    singleSelect:false,//设置True 将禁止多选
+	    clickToSelect:true,
+	    pagination: true, //启动分页
+	    pageSize: 10,  //每页显示的记录数
+	    pageNumber:1, //当前第几页
+	    pageList: [10, 15, 20, 30,50],  //记录数可选列表
+	    sortable:true,	//是否启用排序
+	    sortName :"id",
+	    sortOrder:"desc",//排序方式
+	    search: false,  //是否启用查询
+	    searchOnEnterKey:true,//设置为 true时，按回车触发搜索方法，否则自动触发搜索方法
+	    searchAlign:"right",
+	    showColumns: true,  //显示下拉框勾选要显示的列
+	    showRefresh: true,  //显示刷新按钮
+	    sidePagination: "server", //表示服务端请求
+	    columns:[
+		    {
+		    	field : 'index',
+         		align: 'center',
+				valign: 'middle',
+         		formatter : function(value,row,index){
+                    return index + 1
+         		}
+		    }
+            {% for f in objFieldList %}
+		    ,
+			{
+			    {% ifequal f.fieldNameNew ""%}
+				    title: '{{ f.fieldNameOriginal }}<br>（<font color="red">不导入</font>）',
+                {% else %}
+                    title: '{{ f.fieldNameOriginal }}<br>（{{ f.fieldNameNew }}）',
+                {% endifequal %}
+				field: 'field{{ f.id }}',
+				align: 'center',
+				valign: 'middle'
+			}
+            {% endfor %}
+	    ],
+	    //设置为undefined可以获取pageNumber，pageSize，searchText，sortName，sortOrder
+	    //设置为limit可以获取limit, offset, search, sort, order
+	    queryParamsType : "undefined",
+	    queryParams: function queryParams(params) {   //设置查询参数
+	      	var param = {
+		  		pageIndex: params.pageNumber,
+		  		pageSize: params.pageSize,
+		  		sortName:params.sortName,
+			  	sortOrder:params.sortOrder
+	      	};
+	      	return param;
+	    },
+	    onLoadSuccess: function(data){  //加载成功时执行
+	      	//layer.msg("加载成功");
+	      	//alert("加载成功")
+	      	//alert(data.rows[0].expressSendNum)
+	    },
+	    onLoadError: function(status){  //加载失败时执行
+	      	//layer.msg("加载数据失败", {time : 1500, icon : 2});
+	      	//alert("加载数据失败")
+	    },
+	    onPageChange:function(number,size){
+	    	//alert(pageNumber)
+	    },
+	    onCheck:function(row){
+            //alert(row.id);
+	    },
+	    onUncheck:function(row){
+            //alert(row.id);
+	    },
+        onCheckAll:function(rows){
+            //alert(rows.length);
+	    },
+	    onUncheckAll:function(rows){
+            //alert(rows.length);
+	    },
+	   	onColumnSwitch:function(field, checked){
+	    	//alert(rows.length);
+//	    	console.log("--------------------------")
+//	    	console.log(tableId)
+//	    	console.log(field)
+//	    	console.log(checked)
+	    },
+	    //注册加载子表的事件。注意下这里的三个参数！
+        onExpandRow: function (index, row, $detail) {
+            //InitSubTable(index, row, $detail);
+        }
+	});
+}
+</script>
