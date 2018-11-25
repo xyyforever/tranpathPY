@@ -1,6 +1,6 @@
 import time
 import requests
-import re
+import re,json
 
 class TaoBao:
 
@@ -116,7 +116,6 @@ class TaoBao:
         else:
             print('请检查是否匹配成功')
 
-
     def login_by_st(self,):
         st = self._get_st_token()
         st_url =self.st_url.format(st=st)
@@ -148,7 +147,7 @@ class TaoBao:
                 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36',
                 'referer': 'https://www.taobao.com/?spm=0.1.1581860521.1.7483523cnmVQ2I',
             }
-            for i in range(1):
+            for i in range(2):
                 payload = {
                     'q': ware_name,
                     'filter': 'reserve_price[%d,%d]' %(price_start,price_end),
@@ -157,18 +156,23 @@ class TaoBao:
                     'data-value': i*44
                 }
                 response = requests.get(taobao_url, headers=headers, params=payload, verify = False, cookies = self.cookies)
-                data = response.text.encode('utf-8')
+                data = response.text.encode('utf-8').decode('utf-8')
+
                 datas.append(data)
             return datas
         except Exception as e:
             print(e)
+
     def _parse(self,datas):
+        ware_list = []
         for d in datas:
-            re.search('^')
-            #wares_html = html.xpath('//div[@class="item J_MouserOnverReq  "]')
-            #print(wares_html)
-            #for ware in wares_html:
-            #print(ware.html)
+            print(d)
+            print(type(d))
+            data = re.search('"auctions".*"recommendAuctions"', d, re.S).group()
+            aa = data[11:-20]
+            json_aa = json.loads(aa)
+            ware_list.extend(json_aa)
+        return ware_list
 
 
 
@@ -177,7 +181,11 @@ class TaoBao:
 
 
 
-if __name__ == '__main__':
-    tb = TaoBao()
-    datas = tb._request_ware(ware_name='乐高',price_start=100,price_end=1000)
-    tb._parse(datas)
+
+# if __name__ == '__main__':
+#     tb = TaoBao()
+#     datas = tb._request_ware(ware_name='乐高',price_start=100,price_end=1000)
+#     ware_list = tb._parse(datas)
+#     ware_pro = ['raw_title', 'detail_url', 'view_price', 'item_loc', 'view_sales', 'nick']
+#     wares = map(lambda x: dict([(key, x[key]) for key in ware_pro]), ware_list)
+#     print(list(wares))

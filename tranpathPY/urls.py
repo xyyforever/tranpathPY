@@ -16,7 +16,7 @@ Including another URLconf
 from django.urls import path,include
 from system.views import views
 from api_view import tempdic
-#from api_view import api_ware_view
+from api_view import api_ware_view
 urlpatterns = [
     # path('admin/', admin.site.urls),
 
@@ -46,7 +46,7 @@ urlpatterns = [
     path('dicWareclass/',include("basicInfo.urls.urlsDicWareclass")),
     path('dicArea/',include("basicInfo.urls.urlsDicArea")),
 
-    #path('api_ware_pro', api_ware_view),
+    path('api_ware_pro/', api_ware_view),
 
     path('index/test/', views.test),
     path('index/translateIndex/',tempdic.tlIndex),
