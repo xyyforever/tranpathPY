@@ -46,7 +46,7 @@ urlpatterns = [
     path('dicWareclass/',include("basicInfo.urls.urlsDicWareclass")),
     path('dicArea/',include("basicInfo.urls.urlsDicArea")),
 
-    path('api_ware_pro/', api_ware_view),
+    path('api_ware_pro/', api_ware_view.api_taobao),
 
     path('index/test/', views.test),
     path('index/translateIndex/',tempdic.tlIndex),
