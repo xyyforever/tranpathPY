@@ -137,7 +137,8 @@ class TaoBao:
             print(u'登录失败')
             return False
 
-    def _request_ware(self,ware_name, price_start, price_end):
+    def _request_ware(self,ware_name='乐高', price_start=10, price_end=100):
+        #print('end', price_end, 'start', price_start)
         try:
             #登陆
             self.login_by_st()
@@ -147,26 +148,30 @@ class TaoBao:
                 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36',
                 'referer': 'https://www.taobao.com/?spm=0.1.1581860521.1.7483523cnmVQ2I',
             }
-            for i in range(2):
-                payload = {
-                    'q': ware_name,
-                    'filter': 'reserve_price[%d,%d]' %(price_start,price_end),
-                    'ie': 'utf-8',
-                    'data-key': 's',
-                    'data-value': i*44
-                }
-                response = requests.get(taobao_url, headers=headers, params=payload, verify = False, cookies = self.cookies)
-                data = response.text.encode('utf-8').decode('utf-8')
+            try:
+                for i in range(2):
+                    print('sss')
+                    payload = {
+                        'q': ware_name,
+                        'filter': 'reserve_price[%d,%d]' %(price_start,price_end),
+                        'ie': 'utf-8',
+                        'data-key': 's',
+                        'data-value': i*44
+                    }
+                    response = requests.get(taobao_url, headers=headers, params=payload, verify = False, cookies = self.cookies)
 
-                datas.append(data)
-            return datas
+                    data = response.text.encode('utf-8').decode('utf-8')
+                    print(data)
+                    datas.append(data)
+                    return datas
+            except:
+                return datas
         except Exception as e:
-            print(e)
+            print('没有数据',e)
 
     def _parse(self,datas):
         ware_list = []
         for d in datas:
-            print(d)
             print(type(d))
             data = re.search('"auctions".*"recommendAuctions"', d, re.S).group()
             aa = data[11:-20]
@@ -184,8 +189,10 @@ class TaoBao:
 
 # if __name__ == '__main__':
 #     tb = TaoBao()
-#     datas = tb._request_ware(ware_name='乐高',price_start=100,price_end=1000)
+#     datas = tb._request_ware(ware_name='乐高', price_start=10, price_end=1000)
 #     ware_list = tb._parse(datas)
 #     ware_pro = ['raw_title', 'detail_url', 'view_price', 'item_loc', 'view_sales', 'nick']
 #     wares = map(lambda x: dict([(key, x[key]) for key in ware_pro]), ware_list)
-#     print(list(wares))
+#
+#     ware = json.dumps(list(wares), ensure_ascii=False)
+#     print(ware, type(ware))
